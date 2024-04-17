@@ -92,6 +92,24 @@ while ($emp = $employeesResult->fetch_assoc()) {
                                 <div class="employee-container">
                                     <!-- Dynamic employee assignment rows will be inserted here -->
                                 </div>
+                                <div class="pricing-container">
+                                    <div class="mb-3">
+                                        <label for="truckSize" class="form-label">Truck Size:</label>
+                                        <input type="text" class="form-control" name="truckSize" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="calloutFee" class="form-label">Callout Fee:</label>
+                                        <input type="number" class="form-control" name="calloutFee" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="rate" class="form-label">Rate:</label>
+                                        <input type="number" class="form-control" name="rate" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="deposit" class="form-label">Deposit:</label>
+                                        <input type="text" class="form-control" name="deposit" required>
+                                    </div>
+                                </div>
                                 <button type="button" class="btn btn-secondary add-employee">Add Employee</button>
                                 <input type="time" name="startTime" required>
                                 <button type="submit" class="btn btn-success">Assign</button>
@@ -161,6 +179,7 @@ while ($emp = $employeesResult->fetch_assoc()) {
             });
         });
     </script>
+
 </body>
 
 </html>

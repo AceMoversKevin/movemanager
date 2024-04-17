@@ -22,6 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['bookingID'])) {
         $deleteStmt->bind_param("i", $bookingID);
         $deleteStmt->execute();
 
+        $deletePricingQuery = "DELETE FROM BookingPricing WHERE BookingID = ?";
+        $deletePricingStmt = $conn->prepare($deletePricingQuery);
+        $deletePricingStmt->bind_param("i", $bookingID);
+        $deletePricingStmt->execute();
+
         // Commit the transaction
         $conn->commit();
         echo json_encode(['success' => true, 'message' => 'All employees have been unassigned from this booking.']);
@@ -37,4 +42,3 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['bookingID'])) {
 } else {
     echo json_encode(['success' => false, 'message' => 'Invalid request data.']);
 }
-?>
