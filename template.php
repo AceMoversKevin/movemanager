@@ -18,7 +18,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Template</title>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Additional styles -->
@@ -46,7 +46,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin') {
             <!-- Main Content -->
             <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2" id="Main-Heading">Welcome, <?= $_SESSION['username'] ?>!</h1>
+                    <h1 class="h2" id="Main-Heading">Template</h1>
                 </div>
                 <!-- Dashboard content goes here -->
             </main>

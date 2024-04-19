@@ -1,66 +1,50 @@
 <?php
-include 'db.php'; // Include your database connection file
-session_start();
+// updateBooking.php
 
-// Check for admin role
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
-    exit;
+require_once 'db.php';
+
+// Function to check if the provided field name is valid
+function isValidColumnName($field, $validFields) {
+    return in_array($field, $validFields, true);
 }
 
-// Check for the correct POST variables
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['bookingID'], $_POST['employeePhoneNo'], $_POST['startTime'], $_POST['truckSize'], $_POST['calloutFee'], $_POST['rate'], $_POST['deposit'])) {
-    $bookingID = $conn->real_escape_string($_POST['bookingID']);
-    $startTime = $conn->real_escape_string($_POST['startTime']);
-    $employeePhoneNos = $_POST['employeePhoneNo'];
-    $truckSize = $conn->real_escape_string($_POST['truckSize']);
-    $calloutFee = $conn->real_escape_string($_POST['calloutFee']);
-    $rate = $conn->real_escape_string($_POST['rate']);
-    $deposit = $conn->real_escape_string($_POST['deposit']);
+// Check if the request is AJAX
+if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+    if (isset($_POST['bookingID'], $_POST['field'], $_POST['newValue'])) {
+        $bookingID = $_POST['bookingID'];
+        $field = $_POST['field'];
+        $newValue = $_POST['newValue'];
 
-    // Begin a transaction to ensure atomicity
-    $conn->begin_transaction();
+        // Whitelist of valid field names to prevent SQL injection
+        $validFields = ['Name', 'Email', 'Phone', 'Bedrooms', 'BookingDate', 'MovingDate', 'PickupLocation', 'DropoffLocation', 'TruckSize', 'CalloutFee', 'Rate', 'Deposit', 'TimeSlot', 'isActive'];
 
-    try {
-        // First, remove existing assignments for this booking
-        $deleteEmployeeQuery = "DELETE FROM Bookings_Employees WHERE BookingID = ?";
-        $deleteEmployeeStmt = $conn->prepare($deleteEmployeeQuery);
-        $deleteEmployeeStmt->bind_param("i", $bookingID);
-        $deleteEmployeeStmt->execute();
-
-        // Insert new assignments
-        $insertEmployeeQuery = "INSERT INTO Bookings_Employees (BookingID, EmployeePhoneNo, TimeSlot) VALUES (?, ?, ?)";
-        $insertEmployeeStmt = $conn->prepare($insertEmployeeQuery);
-        foreach ($employeePhoneNos as $employeePhoneNo) {
-            if (!empty($employeePhoneNo)) { // Skip any empty selections
-                $insertEmployeeStmt->bind_param("iss", $bookingID, $employeePhoneNo, $startTime);
-                $insertEmployeeStmt->execute();
-            }
+        // Check if the field name is valid
+        if (!isValidColumnName($field, $validFields)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid field name.']);
+            exit;
         }
 
-        // Update or insert pricing data
-        $updatePricingQuery = "INSERT INTO BookingPricing (BookingID, TruckSize, CalloutFee, Rate, Deposit) VALUES (?, ?, ?, ?, ?)
-                               ON DUPLICATE KEY UPDATE TruckSize = ?, CalloutFee = ?, Rate = ?, Deposit = ?";
-        $updatePricingStmt = $conn->prepare($updatePricingQuery);
-        $updatePricingStmt->bind_param("isiiisii", $bookingID, $truckSize, $calloutFee, $rate, $deposit, $truckSize, $calloutFee, $rate, $deposit);
-        $updatePricingStmt->execute();
+        // Prepare the SQL statement - WARNING: This part of the code still needs careful review for security
+        $sql = "UPDATE Bookings SET $field = ? WHERE BookingID = ?";
 
-        // If all goes well, commit the transaction
-        $conn->commit();
-        echo json_encode(['success' => true, 'message' => 'Booking and pricing updated successfully.']);
-    } catch (Exception $e) {
-        // An error occurred, rollback the transaction
-        $conn->rollback();
-        echo json_encode(['success' => false, 'message' => 'Error updating booking: ' . $e->getMessage()]);
+        if ($stmt = $conn->prepare($sql)) {
+            // Bind parameters and execute
+            $stmt->bind_param("si", $newValue, $bookingID);
+            if ($stmt->execute()) {
+                echo json_encode(['success' => true, 'message' => 'Booking updated successfully.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Error updating booking: ' . $stmt->error]);
+            }
+            $stmt->close();
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error preparing statement: ' . $conn->error]);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Incomplete request.']);
     }
-
-    // Close statements and connection
-    $deleteEmployeeStmt->close();
-    $insertEmployeeStmt->close();
-    $updatePricingStmt->close();
-    $conn->close();
 } else {
-    // If required POST variables are not set
-    echo json_encode(['success' => false, 'message' => 'Invalid request data.']);
+    echo json_encode(['success' => false, 'message' => 'Invalid request.']);
 }
+
+$conn->close();
 ?>
