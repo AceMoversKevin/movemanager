@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
         button.addEventListener('click', function () {
             const parentDiv = button.closest('.editableField');
             const editInput = parentDiv.querySelector('.editInput');
-            const cancelButton = parentDiv.querySelector('.cancelEdit');
+           // const cancelButton = parentDiv.querySelector('.cancelEdit');
             const bookingID = button.closest('.modal').dataset.bookingid; // assumes you have data-bookingid attribute in modal
             const field = editInput.name; // assumes input has a name attribute matching the database column
             const newValue = editInput.value;

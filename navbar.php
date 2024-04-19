@@ -29,7 +29,7 @@
                             </a>
                             <ul class="collapse list-unstyled sub-menu" id="jobsSubmenu">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">Unassigned Jobs</a>
+                                    <a class="nav-link" href="unassignedJobs.php">Unassigned Jobs</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="#">Assigned Jobs</a>
