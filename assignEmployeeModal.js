@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         selectHTML += '</select>';
-        newField.innerHTML = selectHTML + `<i class="fa fa-eraser remove-field" aria-hidden="true" style="cursor: pointer;"></i>`;
+        newField.innerHTML = selectHTML + ' ' + `<i class="fa fa-eraser remove-field" aria-hidden="true" style="cursor: pointer;"></i>`;
         container.appendChild(newField);
 
         // Add event listener for removing the field

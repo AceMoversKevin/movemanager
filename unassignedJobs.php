@@ -146,12 +146,13 @@ if (!$result) {
                                             <div id="employeeFieldContainer<?= $row['BookingID'] ?>">
 
                                             </div>
+
+                                        </div>
+                                        <div class="modal-footer">
                                             <!-- Button to add a new employee assignment field -->
                                             <button type="button" class="btn btn-primary add-employee-btn" data-bookingid="<?= $row['BookingID'] ?>">Add Employee</button>
                                             <!-- Button to confirm assignments -->
                                             <button type="button" class="btn btn-success confirm-assignment-btn" data-bookingid="<?= $row['BookingID'] ?>">Confirm Assignment</button>
-                                        </div>
-                                        <div class="modal-footer">
                                             <!-- The footer can contain buttons like 'Save Changes' or 'Close' -->
                                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
 
