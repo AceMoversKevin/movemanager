@@ -32,7 +32,7 @@
                                     <a class="nav-link" href="unassignedJobs.php">Unassigned Jobs</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">Assigned Jobs</a>
+                                    <a class="nav-link" href="assignedJobs.php">Assigned Jobs</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="#">Completed Jobs</a>
