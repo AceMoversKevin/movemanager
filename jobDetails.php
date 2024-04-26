@@ -26,25 +26,34 @@ $jobDetails = [];
 
 if ($bookingID > 0) {
     $query = "SELECT 
-                  b.BookingID, 
-                  b.Name AS BookingName, 
-                  b.Email AS BookingEmail, 
-                  b.Phone AS BookingPhone, 
-                  b.Bedrooms, 
-                  b.MovingDate,
-                  b.PickupLocation,
-                  b.DropoffLocation,
-                  GROUP_CONCAT(e.Name ORDER BY e.Name SEPARATOR ', ') AS EmployeeNames
-              FROM 
-                  Bookings b
-              JOIN 
-                  BookingAssignments ba ON b.BookingID = ba.BookingID
-              JOIN 
-                  Employees e ON ba.EmployeePhoneNo = e.PhoneNo
-              WHERE 
-                  b.BookingID = ?
-              GROUP BY 
-                  b.BookingID";
+    b.BookingID, 
+    b.Name AS BookingName, 
+    b.Email AS BookingEmail, 
+    b.Phone AS BookingPhone, 
+    b.Bedrooms, 
+    b.MovingDate,
+    b.PickupLocation,
+    b.DropoffLocation,
+    b.TruckSize,
+    b.CalloutFee,
+    b.Rate,
+    b.Deposit,
+    b.TimeSlot,  -- Include the TimeSlot in the SELECT
+    GROUP_CONCAT(e.Name ORDER BY e.Name SEPARATOR ', ') AS EmployeeNames,
+    GROUP_CONCAT(e.Email ORDER BY e.Name SEPARATOR ', ') AS EmployeeEmails -- To get the emails for notification
+FROM 
+    Bookings b
+JOIN 
+    BookingAssignments ba ON b.BookingID = ba.BookingID
+JOIN 
+    Employees e ON ba.EmployeePhoneNo = e.PhoneNo
+WHERE 
+    b.BookingID = ? AND
+    b.BookingID NOT IN (SELECT BookingID FROM CompletedJobs)
+GROUP BY 
+    b.BookingID;
+";
+
     $stmt = $conn->prepare($query);
     $stmt->bind_param("i", $bookingID);
     $stmt->execute();
@@ -185,6 +194,11 @@ if ($bookingID > 0) {
                 const selectContainer = document.createElement('div');
                 selectContainer.id = 'select-container';
 
+                // Notify Employees button listener
+                const notifyButton = document.getElementById('notifyEmployee');
+                notifyButton.addEventListener('click', function() {
+                    notifyEmployees();
+                });
                 // Create employee select options from the PHP array.
                 const selectHTML = employees.map(emp =>
                     `<option value="${emp.PhoneNo}">${emp.Name} (${emp.EmployeeType})</option>`
@@ -299,6 +313,24 @@ if ($bookingID > 0) {
 
                 // Send the request with the form data
                 xhr.send(formData);
+            }
+
+            function notifyEmployees() {
+                // Use the bookingID and jobDetails for the notification
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', 'send-notifications.php', true);
+                xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        console.log('Notification sent:', xhr.responseText);
+                    } else {
+                        console.error('Error sending notification:', xhr.responseText);
+                    }
+                };
+                xhr.onerror = function() {
+                    console.error('Network error.');
+                };
+                xhr.send(`bookingID=${bookingID}`);
             }
 
         });

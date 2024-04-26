@@ -18,8 +18,7 @@ b.Phone AS BookingPhone,
 b.Bedrooms, 
 b.MovingDate,
 b.PickupLocation,
-b.DropoffLocation,
-GROUP_CONCAT(e.Name ORDER BY e.Name SEPARATOR ', ') AS EmployeeNames
+b.DropoffLocation
 FROM 
 Bookings b
 JOIN 
@@ -28,7 +27,7 @@ JOIN
 Employees e ON ba.EmployeePhoneNo = e.PhoneNo
 WHERE 
 b.isActive = 1 AND
-b.BookingID NOT IN (SELECT BookingID FROM CompletedJobs)
+b.BookingID IN (SELECT BookingID FROM CompletedJobs)
 GROUP BY 
 b.BookingID;
 ";
@@ -45,7 +44,7 @@ $result = $conn->query($query);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assigned Jobs</title>
+    <title>Completed Jobs</title>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Additional styles -->
@@ -73,7 +72,7 @@ $result = $conn->query($query);
             <!-- Main Content -->
             <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2" id="Main-Heading">Assigned Jobs</h1>
+                    <h1 class="h2" id="Main-Heading">Completed Jobs</h1>
                 </div>
                 <!-- Dashboard content goes here -->
                 <div class="row">
@@ -94,9 +93,8 @@ $result = $conn->query($query);
                                                 <li>Bedrooms: ' . htmlspecialchars($row["Bedrooms"]) . '</li>
                                                 <li>Pickup Location: ' . htmlspecialchars($row["PickupLocation"]) . '</li>
                                                 <li>Dropoff Location: ' . htmlspecialchars($row["DropoffLocation"]) . '</li>
-                                                <li>Assigned Employees: ' . htmlspecialchars($row["EmployeeNames"]) . '</li>
                                             </ul>
-                                            <button type="button" class="btn btn-outline-success completeJob" data-bookingid="' . htmlspecialchars($row["BookingID"]) . '">Mark as Complete</button>
+                                            <button type="button" class="btn btn-outline-danger incompleteJob" data-bookingid="' . htmlspecialchars($row["BookingID"]) . '">Mark as Incomplete</button>
                                         </div>
                                     </a>
                                     
@@ -118,12 +116,12 @@ $result = $conn->query($query);
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            $('.completeJob').click(function() {
+            $('.incompleteJob').click(function() {
                 event.preventDefault(); // This prevents the default action of the button
                 event.stopPropagation(); // This stops the click event from "bubbling" up to the parent elements
                 var bookingId = $(this).data('bookingid'); // Get the booking ID
                 $.ajax({
-                    url: 'mark-completed.php', // The script to call to insert data into the CompletedJobs table
+                    url: 'mark-incompleted.php', // The script to call to delete data from the CompletedJobs table
                     type: 'POST',
                     data: {
                         'bookingID': bookingId

@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         alert(this.responseText);
                         // Optionally, remove the card from view or mark it as cancelled
                         button.closest('.card').style.display = 'none';
+                        location.reload();
                     } else {
                         // Handle error
                         alert('An error occurred while cancelling the booking.');

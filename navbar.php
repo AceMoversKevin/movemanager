@@ -35,7 +35,7 @@
                                     <a class="nav-link" href="assignedJobs.php">Assigned Jobs</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">Completed Jobs</a>
+                                    <a class="nav-link" href="completedJobs.php">Completed Jobs</a>
                                 </li>
                             </ul>
                         </li>
@@ -45,10 +45,10 @@
                             </a>
                             <ul class="collapse list-unstyled sub-menu" id="employeesSubmenu">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">Active Employees</a>
+                                    <a class="nav-link" href="activeEmployees.php">Active Employees</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">Employee Activation</a>
+                                    <a class="nav-link" href="inactiveEmployees.php">Employee Activation</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="#">Register Employee</a>
