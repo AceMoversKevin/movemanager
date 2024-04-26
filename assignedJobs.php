@@ -11,24 +11,26 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin') {
 
 // Fetch the bookings and the employees assigned to each booking.
 $query = "SELECT 
-              b.BookingID, 
-              b.Name AS BookingName, 
-              b.Email AS BookingEmail, 
-              b.Phone AS BookingPhone, 
-              b.Bedrooms, 
-              b.MovingDate,
-              b.PickupLocation,
-              b.DropoffLocation,
-              GROUP_CONCAT(e.Name ORDER BY e.Name SEPARATOR ', ') AS EmployeeNames,
-              GROUP_CONCAT(ba.Role ORDER BY e.Name SEPARATOR ', ') AS EmployeeRoles
-          FROM 
-              Bookings b
-          JOIN 
-              BookingAssignments ba ON b.BookingID = ba.BookingID
-          JOIN 
-              Employees e ON ba.EmployeePhoneNo = e.PhoneNo
-          GROUP BY 
-              b.BookingID";
+b.BookingID, 
+b.Name AS BookingName, 
+b.Email AS BookingEmail, 
+b.Phone AS BookingPhone, 
+b.Bedrooms, 
+b.MovingDate,
+b.PickupLocation,
+b.DropoffLocation,
+GROUP_CONCAT(e.Name ORDER BY e.Name SEPARATOR ', ') AS EmployeeNames
+FROM 
+Bookings b
+JOIN 
+BookingAssignments ba ON b.BookingID = ba.BookingID
+JOIN 
+Employees e ON ba.EmployeePhoneNo = e.PhoneNo
+WHERE 
+b.isActive = 1
+GROUP BY 
+b.BookingID;
+";
 
 $result = $conn->query($query);
 
