@@ -23,12 +23,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // Function to confirm assignments
     function confirmAssignments(bookingID) {
         const assignedEmployees = document.querySelectorAll(`#employeeFieldContainer${bookingID} .employee-select`);
-        const assignments = Array.from(assignedEmployees).map(select => select.value).filter(phoneNo => phoneNo); // Filter out unselected options
+        const assignments = Array.from(assignedEmployees).map(select => {
+            return select.value ? encodeURIComponent(select.value) : null;
+        }).filter(phoneNo => phoneNo !== null); // Ensure we filter out null or empty entries
 
         // Prepare URL-encoded data string
         let data = `bookingID=${encodeURIComponent(bookingID)}`;
         assignments.forEach((phoneNo, index) => {
-            data += `&assignedEmployees[${index}]=${encodeURIComponent(phoneNo)}`;
+            data += `&assignedEmployees[${index}][EmployeePhoneNo]=${phoneNo}`;
         });
 
         // Create and send XHR request
@@ -41,6 +43,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const response = JSON.parse(this.responseText);
                     if (response.success) {
                         alert(response.message); // Additional UI updates can be made here
+                        window.location.href = 'unassignedJobs.php'; // Redirect to the unassigned jobs page
                     } else {
                         alert('Failed to assign employees: ' + response.message);
                     }
@@ -54,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
         xhr.send(data);
     }
+
 
     // Event listeners for adding new employee fields
     document.querySelectorAll('.add-employee-btn').forEach(btn => {
