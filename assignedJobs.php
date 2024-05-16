@@ -9,32 +9,76 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin') {
     exit;
 }
 
-// Fetch the bookings and the employees assigned to each booking.
-$query = "SELECT 
-b.BookingID, 
-b.Name AS BookingName, 
-b.Email AS BookingEmail, 
-b.Phone AS BookingPhone, 
-b.Bedrooms, 
-b.MovingDate,
-b.PickupLocation,
-b.DropoffLocation,
-GROUP_CONCAT(e.Name ORDER BY e.Name SEPARATOR ', ') AS EmployeeNames
+$query = "
+SELECT 
+    b.BookingID, 
+    b.Name AS BookingName, 
+    b.Email AS BookingEmail, 
+    b.Phone AS BookingPhone, 
+    b.Bedrooms, 
+    b.MovingDate,
+    b.PickupLocation,
+    b.DropoffLocation,
+    GROUP_CONCAT(e.Name ORDER BY e.Name SEPARATOR ', ') AS EmployeeNames,
+    MAX(jt.StartTime) AS JobStartTime,
+    MAX(jt.EndTime) AS JobEndTime,
+    MAX(jt.TotalTime) AS JobTotalTime,
+    MAX(jt.isComplete) AS JobIsComplete,
+    MAX(jt.BreakTime) AS JobBreakTime,
+    MAX(jt.isConfirmed) AS JobIsConfirmed,
+    MAX(jc.TotalCharge) AS JobTotalCharge,
+    MAX(jc.TotalLaborTime) AS JobTotalLaborTime,
+    MAX(jc.TotalBillableTime) AS JobTotalBillableTime,
+    MAX(jc.StairCharge) AS JobStairCharge,
+    MAX(jc.PianoCharge) AS JobPianoCharge,
+    MAX(jc.PoolTableCharge) AS JobPoolTableCharge,
+    MAX(jc.Deposit) AS JobDeposit,
+    MAX(jc.GST) AS JobGST
 FROM 
-Bookings b
+    Bookings b
 JOIN 
-BookingAssignments ba ON b.BookingID = ba.BookingID
+    BookingAssignments ba ON b.BookingID = ba.BookingID
 JOIN 
-Employees e ON ba.EmployeePhoneNo = e.PhoneNo
+    Employees e ON ba.EmployeePhoneNo = e.PhoneNo
+LEFT JOIN 
+    JobTimings jt ON b.BookingID = jt.BookingID
+LEFT JOIN 
+    JobCharges jc ON b.BookingID = jc.BookingID
 WHERE 
-b.isActive = 1 AND
-b.BookingID NOT IN (SELECT BookingID FROM CompletedJobs)
+    b.isActive = 1 AND
+    b.BookingID NOT IN (SELECT BookingID FROM CompletedJobs)
 GROUP BY 
-b.BookingID;
+    b.BookingID, 
+    b.Name, 
+    b.Email, 
+    b.Phone, 
+    b.Bedrooms, 
+    b.MovingDate,
+    b.PickupLocation,
+    b.DropoffLocation;
 ";
 
 $result = $conn->query($query);
 
+
+
+function getStatusClass($status)
+{
+    switch ($status) {
+        case 'not started':
+            return 'status-not-started';
+        case 'in progress':
+            return 'status-in-progress';
+        case 'completed':
+            return 'status-completed';
+        case 'audit':
+            return 'status-audit';
+        case 'payment':
+            return 'status-payment';
+        default:
+            return '';
+    }
+}
 
 
 ?>
@@ -67,6 +111,32 @@ $result = $conn->query($query);
                 <a class="nav-link" href="logout.php">Logout</a>
             </li>
         </ul>
+        <style>
+            .status-not-started {
+                background-color: lightgray;
+            }
+
+            .status-in-progress {
+                background-color: lightyellow;
+            }
+
+            .status-ended {
+                background-color: lightgreen;
+            }
+
+            .status-audit {
+                background-color: lightblue;
+            }
+
+            .status-payment {
+                background-color: lightcoral;
+            }
+
+            .status-completed {
+                background-color: lightgoldenrodyellow;
+            }
+        </style>
+
     </header>
 
     <div class="container-fluid">
@@ -80,38 +150,75 @@ $result = $conn->query($query);
                     <h1 class="h2" id="Main-Heading">Assigned Jobs</h1>
                 </div>
                 <!-- Dashboard content goes here -->
-                <div class="row">
-                    <?php
-                    if ($result->num_rows > 0) {
-                        // Output data of each row
-                        while ($row = $result->fetch_assoc()) {
-                            echo '<div class="col-md-4">
-                                    <a href="jobDetails.php?BookingID=' . htmlspecialchars($row["BookingID"]) . '" class="card mb-4 shadow-sm text-decoration-none text-dark">
-                                        <div class="card-header">
-                                            <h4 class="my-0 font-weight-normal">' . htmlspecialchars($row["BookingName"]) . '</h4>
-                                        </div>
-                                        <div class="card-body">
-                                            <h5 class="card-title pricing-card-title">Moving Date: ' . htmlspecialchars($row["MovingDate"]) . '</h5>
-                                            <ul class="list-unstyled mt-3 mb-4">
-                                                <li>Email: ' . htmlspecialchars($row["BookingEmail"]) . '</li>
-                                                <li>Phone: ' . htmlspecialchars($row["BookingPhone"]) . '</li>
-                                                <li>Bedrooms: ' . htmlspecialchars($row["Bedrooms"]) . '</li>
-                                                <li>Pickup Location: ' . htmlspecialchars($row["PickupLocation"]) . '</li>
-                                                <li>Dropoff Location: ' . htmlspecialchars($row["DropoffLocation"]) . '</li>
-                                                <li>Assigned Employees: ' . htmlspecialchars($row["EmployeeNames"]) . '</li>
-                                            </ul>
-                                            <button type="button" class="btn btn-outline-success completeJob" data-bookingid="' . htmlspecialchars($row["BookingID"]) . '">Mark as Complete</button>
-                                        </div>
-                                    </a>
-                                    
-                                </div>';
-                            // echo '';
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Booking Name</th>
+                            <th>Moving Date</th>
+                            <th>Employees</th>
+                            <th>Details</th>
+                            <th>Action</th>
+                            <th>Started</th>
+                            <th>Ended</th>
+                            <th>Audit</th>
+                            <th>Payment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        if ($result->num_rows > 0) {
+                            while ($row = $result->fetch_assoc()) {
+                                echo "<tr>";
+                                echo "<td>" . htmlspecialchars($row["BookingName"]) . "</td>";
+                                echo "<td>" . htmlspecialchars($row["MovingDate"]) . "</td>";
+                                echo "<td>" . htmlspecialchars($row["EmployeeNames"]) . "</td>";
+                                echo "<td><a href='jobDetails.php?BookingID=" . htmlspecialchars($row["BookingID"]) . "'>View Details</a></td>";
+                                echo "<td><button type='button' class='btn btn-outline-success completeJob' data-bookingid='" . htmlspecialchars($row["BookingID"]) . "'>Mark as Complete</button></td>";
+
+                                // Determine the status for Started
+                                $startedClass = 'status-not-started';
+                                if ($row["JobStartTime"]) {
+                                    $startedClass = 'status-in-progress';
+                                }
+
+                                // Determine the status for Ended
+                                $endedClass = 'status-not-started';
+                                if ($row["JobStartTime"]) {
+                                    $endedClass = 'status-in-progress';
+                                    if ($row["JobEndTime"]) {
+                                        $endedClass = 'status-ended';
+                                    }
+                                }
+
+                                // Determine the status for Audit
+                                $auditClass = 'status-not-started';
+                                if ($row["JobIsComplete"]) {
+                                    $auditClass = 'status-audit';
+                                } else if ($row["JobStartTime"] && $row["JobEndTime"]) {
+                                    $auditClass = 'status-ended';
+                                }
+
+                                // Determine the status for Payment
+                                $paymentClass = 'status-not-started';
+                                if ($row["JobIsConfirmed"]) {
+                                    $paymentClass = 'status-completed';
+                                } else if ($row["JobIsComplete"]) {
+                                    $paymentClass = 'status-payment';
+                                }
+
+                                echo "<td class='$startedClass'>" . ($row["JobStartTime"] ? htmlspecialchars($row["JobStartTime"]) : 'Not Started') . "</td>";
+                                echo "<td class='$endedClass'>" . ($row["JobEndTime"] ? htmlspecialchars($row["JobEndTime"]) : 'Not Ended') . "</td>";
+                                echo "<td class='$auditClass'>" . ($row["JobIsComplete"] ? 'Audit' : 'Audit') . "</td>";
+                                echo "<td class='$paymentClass'>" . ($row["JobIsConfirmed"] ? 'Payment' : 'Payment') . "</td>";
+
+                                echo "</tr>";
+                            }
+                        } else {
+                            echo "<tr><td colspan='9'>No assigned jobs found.</td></tr>";
                         }
-                    } else {
-                        echo "<p>No assigned jobs found.</p>";
-                    }
-                    ?>
-                </div>
+                        ?>
+                    </tbody>
+                </table>
             </main>
         </div>
     </div>
