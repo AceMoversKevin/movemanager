@@ -13,11 +13,22 @@ $ssl_ca = './ca.pem';
 
 // Create a new mysqli instance and enable SSL
 $conn = mysqli_init();
-mysqli_ssl_set($conn, NULL, NULL, $ssl_ca, NULL, NULL); // Set SSL options
-mysqli_real_connect($conn, $host, $dbUser, $dbPass, $dbName, $port, NULL, MYSQLI_CLIENT_SSL);
 
-if ($conn->connect_error) {
+if (!$conn) {
+    die("mysqli_init failed");
+}
+
+mysqli_ssl_set($conn, NULL, NULL, $ssl_ca, NULL, NULL); // Set SSL options
+
+if (!mysqli_real_connect($conn, $host, $dbUser, $dbPass, $dbName, $port, NULL, MYSQLI_CLIENT_SSL)) {
+    die("Connection failed: " . mysqli_connect_error());
+}
+
+// Check if the connection is established
+if ($conn->connect_errno) {
     die("Connection failed: " . $conn->connect_error);
 }
 
+// Success message (for testing purposes; remove in production)
+echo "Connected successfully to the external database";
 ?>
