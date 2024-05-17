@@ -37,6 +37,9 @@
                                 <li class="nav-item">
                                     <a class="nav-link" href="completedJobs.php">Completed Jobs</a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="createInvoice.php">Create Invoice</a>
+                                </li>
                             </ul>
                         </li>
                         <li class="nav-item">

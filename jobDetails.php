@@ -24,44 +24,117 @@ $bookingID = isset($_GET['BookingID']) ? intval($_GET['BookingID']) : 0;
 // Initialize an empty array for job details
 $jobDetails = [];
 
+
 if ($bookingID > 0) {
     $query = "SELECT 
-    b.BookingID, 
-    b.Name AS BookingName, 
-    b.Email AS BookingEmail, 
-    b.Phone AS BookingPhone, 
-    b.Bedrooms, 
-    b.MovingDate,
-    b.PickupLocation,
-    b.DropoffLocation,
-    b.TruckSize,
-    b.CalloutFee,
-    b.Rate,
-    b.Deposit,
-    b.TimeSlot,  -- Include the TimeSlot in the SELECT
-    GROUP_CONCAT(e.Name ORDER BY e.Name SEPARATOR ', ') AS EmployeeNames,
-    GROUP_CONCAT(e.Email ORDER BY e.Name SEPARATOR ', ') AS EmployeeEmails -- To get the emails for notification
-FROM 
-    Bookings b
-JOIN 
-    BookingAssignments ba ON b.BookingID = ba.BookingID
-JOIN 
-    Employees e ON ba.EmployeePhoneNo = e.PhoneNo
-WHERE 
-    b.BookingID = ? AND
-    b.BookingID NOT IN (SELECT BookingID FROM CompletedJobs)
-GROUP BY 
-    b.BookingID;
-";
+        b.BookingID, 
+        b.Name AS BookingName, 
+        b.Email AS BookingEmail, 
+        b.Phone AS BookingPhone, 
+        b.Bedrooms, 
+        b.BookingDate,
+        b.MovingDate,
+        b.PickupLocation,
+        b.DropoffLocation,
+        b.TruckSize,
+        b.CalloutFee,
+        b.Rate,
+        b.Deposit,
+        b.TimeSlot,
+        b.isActive,
+        b.StairCharges,
+        b.PianoCharge,
+        b.PoolTableCharge AS BookingPoolTableCharge,
+        GROUP_CONCAT(DISTINCT e.Name ORDER BY e.Name SEPARATOR ', ') AS EmployeeNames,
+        GROUP_CONCAT(DISTINCT e.Email ORDER BY e.Name SEPARATOR ', ') AS EmployeeEmails,
+        MAX(jt.TimingID) AS TimingID,  -- Use aggregate functions for JobTimings columns
+        MAX(jt.StartTime) AS TimingStartTime,
+        MAX(jt.EndTime) AS TimingEndTime,
+        MAX(jt.TotalTime) AS TimingTotalTime,
+        MAX(jt.isComplete) AS TimingIsComplete,
+        MAX(jt.BreakTime) AS TimingBreakTime,
+        MAX(jt.isConfirmed) AS TimingIsConfirmed,
+        MAX(jc.jobID) AS jobID,  -- Use aggregate functions for JobCharges columns
+        MAX(jc.TotalCharge) AS JobTotalCharge,
+        MAX(jc.TotalLaborTime) AS JobTotalLaborTime,
+        MAX(jc.TotalBillableTime) AS JobTotalBillableTime,
+        MAX(jc.StairCharge) AS JobStairCharge,
+        MAX(jc.PianoCharge) AS JobPianoCharge,
+        MAX(jc.StartTime) AS JobStartTime,
+        MAX(jc.EndTime) AS JobEndTime,
+        MAX(jc.Deposit) AS JobDeposit,
+        MAX(jc.GST) AS JobGST,
+        MAX(jc.PoolTableCharge) AS JobPoolTableCharge
+    FROM 
+        Bookings b
+    JOIN 
+        BookingAssignments ba ON b.BookingID = ba.BookingID
+    JOIN 
+        Employees e ON ba.EmployeePhoneNo = e.PhoneNo
+    LEFT JOIN 
+        JobTimings jt ON b.BookingID = jt.BookingID
+    LEFT JOIN 
+        JobCharges jc ON b.BookingID = jc.BookingID
+    WHERE 
+        b.BookingID = ? AND
+        b.BookingID NOT IN (SELECT BookingID FROM CompletedJobs)
+    GROUP BY 
+        b.BookingID, 
+        b.Name, 
+        b.Email, 
+        b.Phone, 
+        b.Bedrooms, 
+        b.BookingDate,
+        b.MovingDate,
+        b.PickupLocation,
+        b.DropoffLocation,
+        b.TruckSize,
+        b.CalloutFee,
+        b.Rate,
+        b.Deposit,
+        b.TimeSlot,
+        b.isActive,
+        b.StairCharges,
+        b.PianoCharge,
+        b.PoolTableCharge;
+    ";
 
     $stmt = $conn->prepare($query);
     $stmt->bind_param("i", $bookingID);
     $stmt->execute();
     $result = $stmt->get_result();
-    if ($result->num_rows > 0) {
-        $jobDetails = $result->fetch_assoc();
+
+    $jobDetails = [];
+    if ($row = $result->fetch_assoc()) {
+        $jobDetails = $row;
+
+        $subTotal = calculateSubTotal($row['JobTotalLaborTime'], $row['Rate'], $row['CalloutFee']);
+        $jobDetails['SubTotal'] = $subTotal;
+
+        // Determine GST percentage
+        $gstIncluded = isGSTIncluded($row['JobGST']);
+        $gstPercentage = $gstIncluded ? '10%' : '0%';
+
+        // Calculate the surcharge
+        $surcharge = ($row['JobGST'] == 1) ? $subTotal * 0.10 : 0;
+        $jobDetails['Surcharge'] = $surcharge;
+
+        // Check if there are any additional charges
+        $hasAdditionalCharges = ($row['StairCharges'] != 0 || $row['PianoCharge'] != 0 || $row['BookingPoolTableCharge'] != 0);
     }
     $stmt->close();
+} else {
+    header("Location: index.php");
+    exit;
+}
+function calculateSubTotal($totalLaborTime, $rate, $calloutFee)
+{
+    return ($totalLaborTime + $calloutFee) * $rate;
+}
+
+function isGSTIncluded($gstValue)
+{
+    return $gstValue == 1;
 }
 
 ?>
@@ -119,6 +192,163 @@ GROUP BY
             /* Red */
             color: white;
         }
+
+        .invoice-container {
+            overflow-y: auto;
+            /* Enable scrolling for content overflow */
+        }
+
+        .invoice-box {
+            max-width: 100%;
+            margin: 15px;
+            padding: 10px;
+            border: 1px solid #eee;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+            font-size: 14px;
+            line-height: 1.6;
+            font-family: sans-serif;
+            color: #555;
+        }
+
+        .invoice-box table {
+            width: 100%;
+            line-height: inherit;
+            text-align: left;
+            border-collapse: collapse;
+            /* Remove default table spacing */
+        }
+
+        .invoice-box table td {
+            padding: 5px;
+            vertical-align: top;
+        }
+
+        .invoice-box table tr td:nth-child(2) {
+            text-align: right;
+        }
+
+        .invoice-box table tr.top table td {
+            padding-bottom: 20px;
+        }
+
+        .invoice-box table tr.top table td.title {
+            font-size: 20px;
+            line-height: 1.2;
+        }
+
+        .top table {
+            width: 100%;
+        }
+
+        .top td {
+            vertical-align: middle;
+            text-align: left;
+        }
+
+        .top .title img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .top .title {
+            width: 20%;
+            /* Adjust as needed */
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .top .invoice-details {
+            width: 80%;
+            /* Adjust as needed */
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .invoice-box table tr.top table td.title img {
+            width: 100px;
+            /* Adjust logo size as needed */
+            max-width: 100%;
+            /* Ensure the logo scales down on small screens */
+        }
+
+        .invoice-box table tr.information table td {
+            padding-bottom: 20px;
+            /* Reduced for better fit */
+        }
+
+        .invoice-box table tr.heading td {
+            background: #eee;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+
+        .invoice-box table tr.item td {
+            border-bottom: 1px solid #eee;
+        }
+
+        .invoice-box table tr.item.last td {
+            border-bottom: none;
+        }
+
+        .invoice-box table tr.total td:nth-child(2) {
+            border-top: 2px solid #eee;
+            font-weight: bold;
+        }
+
+        .invoice-box p {
+            /* Style for the "For any queries..." paragraph */
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        /* Responsive Styles */
+        @media only screen and (max-width: 600px) {
+            .invoice-box {
+                font-size: 12px;
+            }
+
+            .invoice-box table tr.top table td,
+            .invoice-box table tr.information table td {
+                width: 100%;
+                display: block;
+                text-align: center;
+            }
+
+            /* Additional adjustments for smaller screens */
+        }
+
+        .payment-options-container {
+            margin-top: 20px;
+            /* Space the payment container from the invoice */
+        }
+
+        .payment-option {
+            margin-bottom: 15px;
+        }
+
+        .payment-details {
+            display: none;
+            /* Hide by default */
+            margin-top: 10px;
+        }
+
+        .payment-option input[type="radio"]:checked+label+.payment-details {
+            display: block;
+            /* Show when option is selected */
+        }
+
+        /* Mock Stripe element (basic styling) */
+        #mock-stripe-element {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        #mock-stripe-element input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+        }
     </style>
 </head>
 
@@ -138,31 +368,88 @@ GROUP BY
 
             <?php include 'navbar.php'; ?>
 
-            <!-- Main Content -->
             <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2" id="Main-Heading">Details for the Job</h1>
                 </div>
-                <!-- Dashboard content goes here -->
+
                 <?php if (!empty($jobDetails)) : ?>
-                    <p><strong>Booking Name:</strong> <?php echo htmlspecialchars($jobDetails['BookingName']); ?></p>
-                    <p><strong>Email:</strong> <?php echo htmlspecialchars($jobDetails['BookingEmail']); ?></p>
-                    <p><strong>Phone:</strong> <?php echo htmlspecialchars($jobDetails['BookingPhone']); ?></p>
-                    <p><strong>Bedrooms:</strong> <?php echo htmlspecialchars($jobDetails['Bedrooms']); ?></p>
-                    <p><strong>Moving Date:</strong> <?php echo htmlspecialchars($jobDetails['MovingDate']); ?></p>
-                    <p><strong>Pickup Location:</strong> <?php echo htmlspecialchars($jobDetails['PickupLocation']); ?></p>
-                    <p><strong>Dropoff Location:</strong> <?php echo htmlspecialchars($jobDetails['DropoffLocation']); ?></p>
-                    <p><strong>Assigned Employees:</strong> <?php echo htmlspecialchars($jobDetails['EmployeeNames']); ?></p>
-                    <button type="button" class="btn btn-outline-info" id="editEmployee">Edit Employees</button>
-                    <button type="button" class="btn btn-outline-warning" id="notifyEmployee">Notify Employees</button>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h3>Move Details</h3>
+                            <p><strong>Date:</strong> <?php echo htmlspecialchars($jobDetails['MovingDate']); ?></p>
+                            <p><strong>Name:</strong> <?php echo htmlspecialchars($jobDetails['BookingName']); ?></p>
+                            <p><strong>Email:</strong> <?php echo htmlspecialchars($jobDetails['BookingEmail']); ?></p>
+                            <p><strong>Rate:</strong> $<?php echo htmlspecialchars($jobDetails['Rate']); ?>/hr</p>
+                            <p><strong>Deposit:</strong> $<?php echo htmlspecialchars($jobDetails['Deposit']); ?></p>
+                            <p><strong>Start Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingStartTime']); ?></p>
+                        </div>
+
+                        <div class="col-md-4">
+                            <h3>Additional Charges</h3>
+                            <ul>
+                                <?php if ($jobDetails['JobStairCharge'] != 0) : ?>
+                                    <li>Stair Charges: $<?php echo number_format($jobDetails['JobStairCharge']); ?></li>
+                                <?php endif; ?>
+                                <?php if ($jobDetails['JobPoolTableCharge'] != 0) : ?>
+                                    <li>Pool Table Charges: $<?php echo number_format($jobDetails['JobPoolTableCharge']); ?></li>
+                                <?php endif; ?>
+                                <?php if ($jobDetails['JobPianoCharge'] != 0) : ?>
+                                    <li>Piano Charges: $<?php echo number_format($jobDetails['JobPianoCharge']); ?></li>
+                                <?php endif; ?>
+                            </ul>
+                        </div>
+
+                        <div class="col-md-4">
+                            <h3>Live Invoice Preview</h3>
+                            <p><strong>Total Labor Time:</strong> <?php echo htmlspecialchars($jobDetails['JobTotalLaborTime']); ?>h</p>
+                            <p><strong>Total Billable Time:</strong> <?php echo htmlspecialchars($jobDetails['JobTotalBillableTime']); ?>h</p>
+                            <p><strong>Subtotal:</strong> $<?php echo htmlspecialchars($jobDetails['SubTotal']); ?></p>
+                            <p><strong>GST:</strong> $<?php echo $surcharge; ?></p>
+                            <p><strong>Total:</strong> $<?php echo htmlspecialchars($jobDetails['JobTotalCharge']); ?></p>
+                            <button class="btn btn-secondary">Download Invoice</button>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    Job Timings
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Timing ID:</strong> <?php echo htmlspecialchars($jobDetails['TimingID']); ?></p>
+                                    <p><strong>Start Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingStartTime']); ?></p>
+                                    <p><strong>End Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingEndTime']); ?></p>
+                                    <p><strong>Is Complete:</strong> <?php echo htmlspecialchars($jobDetails['TimingIsComplete'] ? 'Yes' : 'No'); ?></p>
+                                    <p><strong>Break Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingBreakTime']); ?></p>
+                                    <p><strong>Is Confirmed:</strong> <?php echo htmlspecialchars($jobDetails['TimingIsConfirmed'] ? 'Yes' : 'No'); ?></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    Assigned Employees
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Names:</strong> <?php echo htmlspecialchars($jobDetails['EmployeeNames']); ?></p>
+                                    <p><strong>Emails:</strong> <?php echo htmlspecialchars($jobDetails['EmployeeEmails']); ?></p>
+                                    <button type="button" class="btn btn-outline-info" id="editEmployee">Edit Employees</button>
+                                    <button type="button" class="btn btn-outline-warning" id="notifyEmployee">Notify Employees</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="employee-edit-form"></div>
+
                 <?php else : ?>
-                    <p>Job details not found.</p>
+                    <p>Job details not found for BookingID: <?php echo htmlspecialchars($bookingID); ?></p>
                 <?php endif; ?>
-
-                <div id="employee-edit-form"></div>
-
-
             </main>
+
         </div>
     </div>
 

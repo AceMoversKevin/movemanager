@@ -90,7 +90,7 @@ function getStatusClass($status)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php
-    $refreshTime = 300; // 5 minutes in seconds
+    $refreshTime = 100;
     echo '<meta http-equiv="refresh" content="' . $refreshTime . '">';
     ?>
     <title>Assigned Jobs</title>
@@ -186,6 +186,7 @@ function getStatusClass($status)
                                 if ($row["JobStartTime"]) {
                                     $endedClass = 'status-in-progress';
                                     if ($row["JobEndTime"]) {
+                                        $startedClass = 'status-ended';
                                         $endedClass = 'status-ended';
                                     }
                                 }
@@ -201,8 +202,10 @@ function getStatusClass($status)
                                 // Determine the status for Payment
                                 $paymentClass = 'status-not-started';
                                 if ($row["JobIsConfirmed"]) {
-                                    $paymentClass = 'status-completed';
+                                    $auditClass = 'status-audit';
+                                    // $paymentClass = 'status-completed';
                                 } else if ($row["JobIsComplete"]) {
+                                    $auditClass = 'status-ended';
                                     $paymentClass = 'status-payment';
                                 }
 

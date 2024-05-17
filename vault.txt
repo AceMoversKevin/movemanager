@@ -1,0 +1,201 @@
+            <!-- Main Content -->
+            <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2" id="Main-Heading">Details for the Job</h1>
+                </div>
+                <!-- Dashboard content goes here -->
+                <?php if (!empty($jobDetails)) : ?>
+                    <div class="row">
+                        <!-- General Booking Details -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    General Booking Details
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Booking Name:</strong> <?php echo htmlspecialchars($jobDetails['BookingName']); ?></p>
+                                    <p><strong>Email:</strong> <?php echo htmlspecialchars($jobDetails['BookingEmail']); ?></p>
+                                    <p><strong>Phone:</strong> <?php echo htmlspecialchars($jobDetails['BookingPhone']); ?></p>
+                                    <p><strong>Bedrooms:</strong> <?php echo htmlspecialchars($jobDetails['Bedrooms']); ?></p>
+                                    <p><strong>Booking Date:</strong> <?php echo htmlspecialchars($jobDetails['BookingDate']); ?></p>
+                                    <p><strong>Moving Date:</strong> <?php echo htmlspecialchars($jobDetails['MovingDate']); ?></p>
+                                    <p><strong>Pickup Location:</strong> <?php echo htmlspecialchars($jobDetails['PickupLocation']); ?></p>
+                                    <p><strong>Dropoff Location:</strong> <?php echo htmlspecialchars($jobDetails['DropoffLocation']); ?></p>
+                                    <p><strong>Truck Size:</strong> <?php echo htmlspecialchars($jobDetails['TruckSize']); ?></p>
+                                    <p><strong>Callout Fee:</strong> <?php echo htmlspecialchars($jobDetails['CalloutFee']); ?></p>
+                                    <p><strong>Rate:</strong> <?php echo htmlspecialchars($jobDetails['Rate']); ?></p>
+                                    <p><strong>Deposit:</strong> <?php echo htmlspecialchars($jobDetails['Deposit']); ?></p>
+                                    <p><strong>Time Slot:</strong> <?php echo htmlspecialchars($jobDetails['TimeSlot']); ?></p>
+                                    <p><strong>Is Active:</strong> <?php echo htmlspecialchars($jobDetails['isActive'] ? 'Yes' : 'No'); ?></p>
+                                    <p><strong>Stair Charges:</strong> <?php echo htmlspecialchars($jobDetails['StairCharges']); ?></p>
+                                    <p><strong>Piano Charge:</strong> <?php echo htmlspecialchars($jobDetails['PianoCharge']); ?></p>
+                                    <p><strong>Pool Table Charge:</strong> <?php echo htmlspecialchars($jobDetails['BookingPoolTableCharge']); ?></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Job Charges -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    Invoice Preview
+                                </div>
+                                <div class="invoice-container">
+                                    <div class="invoice-box">
+                                        <table>
+                                            <tr class="top">
+                                                <td colspan="2">
+                                                    <table>
+                                                        <tr>
+                                                            <td class="title">
+                                                                <img src="https://i.postimg.cc/sfp6rLGY/cropped-200x76-1-161x86.png" alt="House moving logo" />
+                                                            </td>
+                                                            <?php if ($gstIncluded) : ?>
+                                                                <td class="invoice-details">
+                                                                    <b>INVOICE</b><br />
+                                                                    Moving Service
+                                                                </td>
+                                                            <?php else : ?>
+                                                                <td class="invoice-details">
+                                                                    <b>Payment Overview</b><br />
+                                                                    Moving Service
+                                                                </td>
+                                                            <?php endif; ?>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+
+                                            <tr class="information">
+                                                <td colspan="2">
+                                                    <table>
+                                                        <tr>
+                                                            <td>
+                                                                ACE MOVERS PTY LTD.<br />
+                                                                ACN:640 368 930
+                                                            </td>
+                                                            <td>
+                                                                Client Name: <?= htmlspecialchars($jobDetails['BookingName']) ?><br />
+                                                                Email: <?= htmlspecialchars($jobDetails['BookingEmail']) ?>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            <tr class="heading">
+                                                <td colspan="2">Timing</td>
+                                            </tr>
+                                            <tr class="item">
+                                                <td>Total Work Hours</td>
+                                                <td><?= htmlspecialchars($jobDetails['JobTotalLaborTime']) ?> hours</td>
+                                            </tr>
+                                            <tr class="item">
+                                                <td>Callout Fee</td>
+                                                <td><?= htmlspecialchars($jobDetails['CalloutFee']) ?> hour/s</td>
+                                            </tr>
+                                            <tr class="heading">
+                                                <td colspan="2">Rate</td>
+                                            </tr>
+                                            <tr class="item">
+                                                <td>Per Hour Rate</td>
+                                                <td>$<?= htmlspecialchars($jobDetails['Rate']) ?></td>
+                                            </tr>
+                                            <tr class="item">
+                                                <td>SubTotal</td>
+                                                <td>$<?= htmlspecialchars($jobDetails['SubTotal']) ?></td>
+                                            </tr>
+                                            <tr class="item">
+                                                <td>GST</td>
+                                                <td><?php echo $gstPercentage; ?></td>
+                                            </tr>
+                                            <tr class="item">
+                                                <td>Surcharge</td>
+                                                <td>$<?php echo number_format($jobDetails['Surcharge'], 2); ?></td>
+                                            </tr>
+                                            <?php if ($hasAdditionalCharges) : ?>
+                                                <tr class="heading">
+                                                    <td colspan="2">Additional Charges</td>
+                                                </tr>
+                                                <?php if ($jobDetails['JobStairCharge'] != 0) : ?>
+                                                    <tr class="item">
+                                                        <td>Stair Charge</td>
+                                                        <td>$<?php echo number_format($jobDetails['JobStairCharge']); ?></td>
+                                                    </tr>
+                                                <?php endif; ?>
+                                                <?php if ($jobDetails['JobPianoCharge'] != 0) : ?>
+                                                    <tr class="item">
+                                                        <td>Piano Charge</td>
+                                                        <td><?php echo number_format($jobDetails['JobPianoCharge']); ?>h</td>
+                                                    </tr>
+                                                <?php endif; ?>
+                                                <?php if ($jobDetails['JobPoolTableCharge'] != 0) : ?>
+                                                    <tr class="item">
+                                                        <td>Pool Table Charge</td>
+                                                        <td><?php echo number_format($jobDetails['JobPoolTableCharge']); ?>h</td>
+                                                    </tr>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                            <tr class="heading">
+                                                <td colspan="2">Deposit</td>
+                                            </tr>
+                                            <tr class="item last">
+                                                <td>Initial Deposit Adjustment</td>
+                                                <td>-$<?= htmlspecialchars($jobDetails['Deposit']) ?></td>
+                                            </tr>
+                                            <tr class="total">
+                                                <td></td>
+                                                <td><b>Total: $<?= htmlspecialchars($jobDetails['JobTotalCharge']) ?></b></td>
+                                            </tr>
+                                        </table>
+                                        <p>For any queries please contact us at info@acemovers.com.au or call us at 1300 136 735</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+
+                    <div class="row">
+                        <!-- Job Timings -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    Job Timings
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Timing ID:</strong> <?php echo htmlspecialchars($jobDetails['TimingID']); ?></p>
+                                    <p><strong>Start Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingStartTime']); ?></p>
+                                    <p><strong>End Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingEndTime']); ?></p>
+                                    <!-- <p><strong>Total Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingTotalTime']); ?></p> -->
+                                    <p><strong>Is Complete:</strong> <?php echo htmlspecialchars($jobDetails['TimingIsComplete'] ? 'Yes' : 'No'); ?></p>
+                                    <p><strong>Break Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingBreakTime']); ?></p>
+                                    <p><strong>Is Confirmed:</strong> <?php echo htmlspecialchars($jobDetails['TimingIsConfirmed'] ? 'Yes' : 'No'); ?></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assigned Employees -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    Assigned Employees
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Names:</strong> <?php echo htmlspecialchars($jobDetails['EmployeeNames']); ?></p>
+                                    <p><strong>Emails:</strong> <?php echo htmlspecialchars($jobDetails['EmployeeEmails']); ?></p>
+                                    <button type="button" class="btn btn-outline-info" id="editEmployee">Edit Employees</button>
+                                    <button type="button" class="btn btn-outline-warning" id="notifyEmployee">Notify Employees</button>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+
+                    <div id="employee-edit-form"></div>
+
+                <?php else : ?>
+                    <p>Job details not found for BookingID: <?php echo htmlspecialchars($bookingID); ?></p>
+                <?php endif; ?>
+            </main>
