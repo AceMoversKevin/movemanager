@@ -407,7 +407,7 @@ function isGSTIncluded($gstValue)
                             <p><strong>Subtotal:</strong> $<?php echo htmlspecialchars($jobDetails['SubTotal']); ?></p>
                             <p><strong>GST:</strong> $<?php echo $surcharge; ?></p>
                             <p><strong>Total:</strong> $<?php echo htmlspecialchars($jobDetails['JobTotalCharge']); ?></p>
-                            <button class="btn btn-secondary">Download Invoice</button>
+                            <button class="btn btn-secondary" name="download-invoice-button">Download Invoice</button>
                         </div>
                     </div>
 

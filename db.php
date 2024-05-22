@@ -30,5 +30,5 @@ if ($conn->connect_errno) {
 }
 
 // Success message (for testing purposes; remove in production)
-echo "Connected successfully to the external database";
+// echo "Connected successfully to the external database";
 ?>
