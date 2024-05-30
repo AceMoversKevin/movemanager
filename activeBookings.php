@@ -12,6 +12,30 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin') {
 // Back end logic
 // Fetch active bookings from the database
 $query = "SELECT * FROM Bookings WHERE isActive = 1";
+
+// Check if sorting criteria is provided
+if (isset($_GET['movingDate']) && !empty($_GET['movingDate'])) {
+    $movingDate = $_GET['movingDate'];
+    $query .= " AND MovingDate = '$movingDate'";
+}
+
+if (isset($_GET['bookingDate']) && !empty($_GET['bookingDate'])) {
+    $bookingDate = $_GET['bookingDate'];
+    $query .= " AND BookingDate = '$bookingDate'";
+}
+
+if (isset($_GET['movingDateStart']) && isset($_GET['movingDateEnd']) && !empty($_GET['movingDateStart']) && !empty($_GET['movingDateEnd'])) {
+    $movingDateStart = $_GET['movingDateStart'];
+    $movingDateEnd = $_GET['movingDateEnd'];
+    $query .= " AND MovingDate BETWEEN '$movingDateStart' AND '$movingDateEnd'";
+}
+
+if (isset($_GET['bookingDateStart']) && isset($_GET['bookingDateEnd']) && !empty($_GET['bookingDateStart']) && !empty($_GET['bookingDateEnd'])) {
+    $bookingDateStart = $_GET['bookingDateStart'];
+    $bookingDateEnd = $_GET['bookingDateEnd'];
+    $query .= " AND BookingDate BETWEEN '$bookingDateStart' AND '$bookingDateEnd'";
+}
+
 $result = $conn->query($query);
 
 ?>
@@ -53,6 +77,38 @@ $result = $conn->query($query);
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2" id="Main-Heading">Active Bookings</h1>
                 </div>
+
+                <form method="GET" action="">
+                    <div class="form-row">
+                        <div class="form-group col-md-3">
+                            <label for="movingDate">Moving Date</label>
+                            <input type="date" class="form-control" id="movingDate" name="movingDate">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label for="bookingDate">Booking Date</label>
+                            <input type="date" class="form-control" id="bookingDate" name="bookingDate">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label for="movingDateStart">Moving Date Range Start</label>
+                            <input type="date" class="form-control" id="movingDateStart" name="movingDateStart">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label for="movingDateEnd">Moving Date Range End</label>
+                            <input type="date" class="form-control" id="movingDateEnd" name="movingDateEnd">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label for="bookingDateStart">Booking Date Range Start</label>
+                            <input type="date" class="form-control" id="bookingDateStart" name="bookingDateStart">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label for="bookingDateEnd">Booking Date Range End</label>
+                            <input type="date" class="form-control" id="bookingDateEnd" name="bookingDateEnd">
+                        </div>
+                        <div class="form-group col-md-12">
+                            <button type="submit" class="btn btn-primary">Sort</button>
+                        </div>
+                    </div>
+                </form>
                 <!-- Dashboard content goes here -->
                 <div class="container mt-4">
                     <div class="row">

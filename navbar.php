@@ -54,7 +54,7 @@
                                     <a class="nav-link" href="inactiveEmployees.php">Employee Activation</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">Register Employee</a>
+                                    <a class="nav-link" href="registerEmployee.php">Register Employee</a>
                                 </li>
                             </ul>
                         </li>
