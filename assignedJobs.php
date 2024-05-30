@@ -112,31 +112,137 @@ function getStatusClass($status)
             </li>
         </ul>
         <style>
-            .status-not-started {
-                background-color: lightgray;
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
             }
 
-            .status-in-progress {
-                background-color: lightyellow;
+            body {
+                font-family: "Poppins", sans-serif;
             }
 
-            .status-ended {
-                background-color: lightgreen;
+            .step-wizard {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-top: 20px;
             }
 
-            .status-audit {
-                background-color: lightblue;
+            .step-wizard-list {
+                background: #fff;
+                box-shadow: 0 15px 25px rgba(0, 0, 0, 0.1);
+                color: #333;
+                list-style-type: none;
+                border-radius: 10px;
+                display: flex;
+                padding: 20px 10px;
+                position: relative;
+                z-index: 10;
+                width: 100%;
+                max-width: 1000px;
             }
 
-            .status-payment {
-                background-color: lightcoral;
+            .step-wizard-item {
+                padding: 0 20px;
+                flex-basis: 0;
+                flex-grow: 1;
+                max-width: 100%;
+                display: flex;
+                flex-direction: column;
+                text-align: center;
+                min-width: 170px;
+                position: relative;
             }
 
-            .status-completed {
-                background-color: lightgoldenrodyellow;
+            .step-wizard-item+.step-wizard-item:after {
+                content: "";
+                position: absolute;
+                left: 0;
+                top: 19px;
+                background: #21d4fd;
+                width: 100%;
+                height: 2px;
+                transform: translateX(-50%);
+                z-index: -10;
+            }
+
+            .progress-count {
+                height: 40px;
+                width: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                font-weight: 600;
+                margin: 0 auto;
+                position: relative;
+                z-index: 10;
+                color: transparent;
+            }
+
+            .progress-count:after {
+                content: "";
+                height: 40px;
+                width: 40px;
+                background: #21d4fd;
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                border-radius: 50%;
+                z-index: -10;
+            }
+
+            /* .progress-count:before {
+                content: "";
+                height: 10px;
+                width: 20px;
+                border-left: 3px solid #fff;
+                border-bottom: 3px solid #fff;
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -60%) rotate(-45deg);
+                transform-origin: center center;
+            } */
+
+            .progress-label {
+                font-size: 14px;
+                font-weight: 600;
+                margin-top: 10px;
+            }
+
+            .current-item .progress-count:before,
+            .current-item~.step-wizard-item .progress-count:before {
+                display: none;
+            }
+
+            .current-item~.step-wizard-item .progress-count:after {
+                height: 10px;
+                width: 10px;
+            }
+
+            .current-item~.step-wizard-item .progress-label {
+                opacity: 0.5;
+            }
+
+            .current-item .progress-count:after {
+                background: #fff;
+                border: 2px solid #21d4fd;
+            }
+
+            .current-item .progress-count {
+                color: #21d4fd;
+            }
+
+            .completed-item .progress-count:after,
+            .completed-item .progress-count {
+                background: #21d4fd;
+                color: #fff;
             }
         </style>
-
     </header>
 
     <div class="container-fluid">
@@ -149,7 +255,6 @@ function getStatusClass($status)
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2" id="Main-Heading">Assigned Jobs</h1>
                 </div>
-                <!-- Dashboard content goes here -->
                 <table class="table table-hover">
                     <thead>
                         <tr>
@@ -158,10 +263,7 @@ function getStatusClass($status)
                             <th>Employees</th>
                             <th>Details</th>
                             <th>Action</th>
-                            <th>Started</th>
-                            <th>Ended</th>
-                            <th>Audit</th>
-                            <th>Payment</th>
+                            <th>Progress</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -174,50 +276,43 @@ function getStatusClass($status)
                                 echo "<td>" . htmlspecialchars($row["EmployeeNames"]) . "</td>";
                                 echo "<td><a href='jobDetails.php?BookingID=" . htmlspecialchars($row["BookingID"]) . "'>View Details</a></td>";
                                 echo "<td><button type='button' class='btn btn-outline-success completeJob' data-bookingid='" . htmlspecialchars($row["BookingID"]) . "'>Mark as Complete</button></td>";
+                                echo "<td>";
+                                echo "<section class='step-wizard'>";
+                                echo "<ul class='step-wizard-list'>";
 
-                                // Determine the status for Started
-                                $startedClass = 'status-not-started';
-                                if ($row["JobStartTime"]) {
-                                    $startedClass = 'status-in-progress';
-                                }
+                                // Determine the status for each step
+                                $steps = [
+                                    'Started' => !is_null($row["JobStartTime"]),
+                                    'Ended' => !is_null($row["JobEndTime"]),
+                                    'Audit' => !is_null($row["JobIsComplete"]) && $row["JobIsComplete"] == 1,
+                                    'Payment' => !is_null($row["JobIsConfirmed"]) && $row["JobIsConfirmed"] == 1
+                                ];
 
-                                // Determine the status for Ended
-                                $endedClass = 'status-not-started';
-                                if ($row["JobStartTime"]) {
-                                    $endedClass = 'status-in-progress';
-                                    if ($row["JobEndTime"]) {
-                                        $startedClass = 'status-ended';
-                                        $endedClass = 'status-ended';
+                                $stepIndex = 1;
+                                $currentClass = 'current-item';
+                                $completedClass = 'completed-item';
+                                foreach ($steps as $step => $status) {
+                                    $class = '';
+                                    if ($status) {
+                                        $class = $completedClass;
+                                    } else {
+                                        $class = $currentClass;
+                                        $currentClass = '';
                                     }
+                                    echo "<li class='step-wizard-item " . $class . "'>";
+                                    echo "<span class='progress-count'>" . $stepIndex . "</span>";
+                                    echo "<span class='progress-label'>" . $step . "</span>";
+                                    echo "</li>";
+                                    $stepIndex++;
                                 }
 
-                                // Determine the status for Audit
-                                $auditClass = 'status-not-started';
-                                if ($row["JobIsComplete"]) {
-                                    $auditClass = 'status-audit';
-                                } else if ($row["JobStartTime"] && $row["JobEndTime"]) {
-                                    $auditClass = 'status-ended';
-                                }
-
-                                // Determine the status for Payment
-                                $paymentClass = 'status-not-started';
-                                if ($row["JobIsConfirmed"]) {
-                                    $auditClass = 'status-audit';
-                                    // $paymentClass = 'status-completed';
-                                } else if ($row["JobIsComplete"]) {
-                                    $auditClass = 'status-ended';
-                                    $paymentClass = 'status-payment';
-                                }
-
-                                echo "<td class='$startedClass'>" . ($row["JobStartTime"] ? htmlspecialchars($row["JobStartTime"]) : 'Not Started') . "</td>";
-                                echo "<td class='$endedClass'>" . ($row["JobEndTime"] ? htmlspecialchars($row["JobEndTime"]) : 'Not Ended') . "</td>";
-                                echo "<td class='$auditClass'>" . ($row["JobIsComplete"] ? 'Audit' : 'Audit') . "</td>";
-                                echo "<td class='$paymentClass'>" . ($row["JobIsConfirmed"] ? 'Payment' : 'Payment') . "</td>";
-
+                                echo "</ul>";
+                                echo "</section>";
+                                echo "</td>";
                                 echo "</tr>";
                             }
                         } else {
-                            echo "<tr><td colspan='9'>No assigned jobs found.</td></tr>";
+                            echo "<tr><td colspan='6'>No assigned jobs found.</td></tr>";
                         }
                         ?>
                     </tbody>
