@@ -4,7 +4,7 @@ session_start();
 require 'db.php';
 
 // Check if the user is logged in, otherwise redirect to login page
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin' || $_SESSION['role'] != 'SuperAdmin') {
     header("Location: login.php");
     exit;
 }
@@ -224,6 +224,14 @@ $result = $conn->query($query);
                     <?php else: ?>
                         <p>No assigned jobs found.</p>
                     <?php endif; ?>
+                </div>
+
+                <div class="calendar">
+                <iframe src="https://calendar.google.com/calendar/embed?height=800&wkst=1&ctz=Australia%2FSydney&bgcolor=%23ffffff&src=a2V2aW5AYWNlbW92ZXJzLmNvbS5hdQ&src=cTloam5oNmlxMzZlcmQxMmw0NG5lMG1lN2NAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&src=Y19iMjhkYWY5ZDU5MDM4NWNhZDUxYmZhMGRiOWQ0YWY1YmFkNjBmNDM2MzcxZmU5MTc3ZDgwM2ViYjQ5YmRhZjBkQGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20&src=dGQ5dnZmZWNwM29uOTRxOTE1bGx2bjFrdGNAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&src=bmlja0BhY2Vtb3ZlcnMuY29tLmF1&color=%23039BE5&color=%238E24AA&color=%23B39DDB&color=%23E67C73&color=%234285F4" style="border-width:0" width="1400" height="700" frameborder="0" scrolling="no"></iframe>
+                </div>
+
+                <div class="">
+
                 </div>
             </main>
         </div>

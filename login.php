@@ -1,14 +1,18 @@
 <?php
 session_start();
-include 'db.php'; // Ensure this points to your database connection file
+include 'db.php'; 
 $error_message = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username']) && isset($_POST['password'])) {
     $username = $conn->real_escape_string($_POST['username']);
-    $password = $conn->real_escape_string($_POST['password']); // In real applications, consider hashing the password
+    $password = $conn->real_escape_string($_POST['password']); 
 
-    // SQL query adjusted to check if the user is an admin
-    $sql = "SELECT PhoneNo, Name, Email, EmployeeType FROM Employees WHERE Name = ? AND Password = ? AND EmployeeType = 'Admin'";
+    // SQL query adjusted to check if the user is an admin OR SuperAdmin
+    $sql = "SELECT PhoneNo, Name, Email, EmployeeType 
+            FROM Employees 
+            WHERE Name = ? 
+              AND Password = ? 
+              AND EmployeeType IN ('Admin', 'SuperAdmin')"; 
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ss", $username, $password);
     $stmt->execute();
@@ -21,13 +25,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['username']) && isset($
         $_SESSION['email'] = $user['Email'];
         $_SESSION['role'] = $user['EmployeeType'];
 
-        header("Location: index.php"); // Redirect to admin dashboard
+        header("Location: index.php");  // Redirect to admin dashboard (or wherever you want)
         exit;
     } else {
         $error_message = "Invalid username or password.";
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

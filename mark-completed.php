@@ -2,7 +2,7 @@
 session_start();
 require 'db.php'; // Your database connection file
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin') {
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin' || $_SESSION['role'] != 'SuperAdmin') {
     header("HTTP/1.1 401 Unauthorized");
     exit;
 }
