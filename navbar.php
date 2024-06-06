@@ -74,7 +74,7 @@
                                 </a>
                                 <ul class="collapse list-unstyled sub-menu" id="superAdminSubmenu">
                                     <li class="nav-item">
-                                        <a class="nav-link" href="#">Pay roll</a>
+                                        <a class="nav-link" href="payroll.php">Pay roll</a>
                                     </li>
                                     <li class="nav-item">
                                         <a class="nav-link" href="#">Admin Activation</a>
