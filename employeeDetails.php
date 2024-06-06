@@ -4,12 +4,15 @@ session_start();
 require 'db.php';
 
 // Check if the user is logged in, otherwise redirect to login page
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin' || $_SESSION['role'] != 'SuperAdmin') {
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['role'] != 'SuperAdmin')) {
     header("Location: login.php");
     exit;
 }
 
-// Include any necessary PHP code for handling backend logic
+// Fetch employees except Admins and SuperAdmins
+$query = "SELECT PhoneNo, Name, Email, EmployeeType, isActive, PayRate FROM Employees WHERE EmployeeType != 'Admin' AND EmployeeType != 'SuperAdmin'";
+$result = $conn->query($query);
+
 ?>
 
 <!DOCTYPE html>
@@ -24,7 +27,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin' || $_SESSION['r
     <!-- Additional styles -->
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-
 </head>
 
 <body>
@@ -40,15 +42,46 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin' || $_SESSION['r
 
     <div class="container-fluid">
         <div class="row">
-
             <?php include 'navbar.php'; ?>
 
             <!-- Main Content -->
             <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2" id="Main-Heading">Template</h1>
+                    <h1 class="h2" id="Main-Heading">Employee Details</h1>
                 </div>
                 <!-- Dashboard content goes here -->
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>PhoneNo</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Employee Type</th>
+                            <th>Active</th>
+                            <th>Pay Rate</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        if ($result->num_rows > 0) {
+                            while ($row = $result->fetch_assoc()) {
+                                echo "<tr>";
+                                echo "<td>" . htmlspecialchars($row["PhoneNo"]) . "</td>";
+                                echo "<td>" . htmlspecialchars($row["Name"]) . "</td>";
+                                echo "<td>" . htmlspecialchars($row["Email"]) . "</td>";
+                                echo "<td>" . htmlspecialchars($row["EmployeeType"]) . "</td>";
+                                echo "<td>" . ($row["isActive"] ? 'Yes' : 'No') . "</td>";
+                                echo "<td>" . htmlspecialchars($row["PayRate"]) . "</td>";
+                                echo "<td><a href='editEmployee.php?PhoneNo=" . htmlspecialchars($row["PhoneNo"]) . "' class='btn btn-warning btn-sm'>Edit</a></td>";
+                                echo "</tr>";
+                            }
+                        } else {
+                            echo "<tr><td colspan='7'>No employees found.</td></tr>";
+                        }
+                        ?>
+                    </tbody>
+                </table>
             </main>
         </div>
     </div>
@@ -57,8 +90,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin' || $_SESSION['r
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
-
 
 </body>
 

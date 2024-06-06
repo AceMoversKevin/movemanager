@@ -2,7 +2,7 @@
 session_start();
 require 'db.php'; // Ensure your db connection is correctly set up
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin' || $_SESSION['role'] != 'SuperAdmin') {
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['role'] != 'SuperAdmin')) {
     echo "You do not have permission to perform this action.";
     exit;
 }
