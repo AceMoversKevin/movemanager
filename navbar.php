@@ -67,6 +67,22 @@
                             </a>
                         </li>
 
+                        <?php if ($_SESSION['role'] == 'SuperAdmin') : ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#superAdminSubmenu" data-toggle="collapse" aria-expanded="false">
+                                    Super Admin
+                                </a>
+                                <ul class="collapse list-unstyled sub-menu" id="superAdminSubmenu">
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#">Pay roll</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#">Admin Activation</a>
+                                    </li>
+                                </ul>
+                            </li>
+                        <?php endif; ?>
+
                         <li class="nav-item">
                             <a class="nav-link" href="template.php">
                                 Template/Testbed
