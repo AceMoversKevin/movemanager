@@ -15,7 +15,7 @@ function validateAssignedEmployees($employees)
     return $validatedEmployees;
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_SESSION['user_id']) && $_SESSION['role'] === 'Admin') {
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_SESSION['user_id']) && $_SESSION['role'] === 'Admin' || $_SESSION['role'] === 'SuperAdmin') {
     $bookingID = $_POST['bookingID'];
     $assignedEmployees = validateAssignedEmployees($_POST['assignedEmployees'] ?? []);
 
