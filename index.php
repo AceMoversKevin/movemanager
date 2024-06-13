@@ -60,63 +60,111 @@ GROUP BY
 
 $result = $conn->query($query);
 
-// Fetch data for bookings by bedrooms
-$bedroomsQuery = "SELECT Bedrooms, COUNT(*) AS BookingCount FROM Bookings GROUP BY Bedrooms";
-$bedroomsResult = $conn->query($bedroomsQuery);
-$bedroomsData = [];
-while ($row = $bedroomsResult->fetch_assoc()) {
-    $bedroomsData[] = $row;
+// Fetch data for Number of Bookings per Month
+$bookingsPerMonthQuery = "
+    SELECT DATE_FORMAT(BookingDate, '%Y-%m') AS Month, COUNT(*) AS BookingCount
+    FROM Bookings
+    GROUP BY Month
+    ORDER BY Month;
+";
+$bookingsPerMonthResult = $conn->query($bookingsPerMonthQuery);
+$bookingsPerMonthData = [];
+while ($row = $bookingsPerMonthResult->fetch_assoc()) {
+    $bookingsPerMonthData[] = $row;
 }
 
-// Fetch data for bookings by truck size
-$truckSizeQuery = "SELECT TruckSize, COUNT(*) AS BookingCount FROM Bookings GROUP BY TruckSize";
-$truckSizeResult = $conn->query($truckSizeQuery);
-$truckSizeData = [];
-while ($row = $truckSizeResult->fetch_assoc()) {
-    $truckSizeData[] = $row;
+// Fetch data for Bookings by Weekday
+$bookingsByWeekdayQuery = "
+    SELECT DAYNAME(BookingDate) AS Weekday, COUNT(*) AS BookingCount
+    FROM Bookings
+    GROUP BY Weekday
+    ORDER BY FIELD(Weekday, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday');
+";
+$bookingsByWeekdayResult = $conn->query($bookingsByWeekdayQuery);
+$bookingsByWeekdayData = [];
+while ($row = $bookingsByWeekdayResult->fetch_assoc()) {
+    $bookingsByWeekdayData[] = $row;
 }
 
-// Fetch data for bedrooms by truck size
-$bedroomsTruckSizeQuery = "SELECT TruckSize, Bedrooms, COUNT(*) AS BookingCount FROM Bookings GROUP BY TruckSize, Bedrooms";
-$bedroomsTruckSizeResult = $conn->query($bedroomsTruckSizeQuery);
-$bedroomsTruckSizeData = [];
-while ($row = $bedroomsTruckSizeResult->fetch_assoc()) {
-    $bedroomsTruckSizeData[] = $row;
+// Fetch data for Bookings by Number of Bedrooms
+$bookingsByBedroomsQuery = "
+    SELECT Bedrooms, COUNT(*) AS BookingCount
+    FROM Bookings
+    GROUP BY Bedrooms;
+";
+$bookingsByBedroomsResult = $conn->query($bookingsByBedroomsQuery);
+$bookingsByBedroomsData = [];
+while ($row = $bookingsByBedroomsResult->fetch_assoc()) {
+    $bookingsByBedroomsData[] = $row;
 }
 
-// Fetch data for bookings by callout fee
-$calloutFeeQuery = "SELECT CalloutFee, COUNT(*) AS BookingCount FROM Bookings GROUP BY CalloutFee";
-$calloutFeeResult = $conn->query($calloutFeeQuery);
-$calloutFeeData = [];
-while ($row = $calloutFeeResult->fetch_assoc()) {
-    $calloutFeeData[] = $row;
+// Fetch data for Bookings by Truck Size
+$bookingsByTruckSizeQuery = "
+    SELECT TruckSize, COUNT(*) AS BookingCount
+    FROM Bookings
+    GROUP BY TruckSize;
+";
+$bookingsByTruckSizeResult = $conn->query($bookingsByTruckSizeQuery);
+$bookingsByTruckSizeData = [];
+while ($row = $bookingsByTruckSizeResult->fetch_assoc()) {
+    $bookingsByTruckSizeData[] = $row;
 }
 
-// Fetch data for bookings by stair charges
-$stairChargesQuery = "SELECT StairCharges, COUNT(*) AS BookingCount FROM Bookings WHERE StairCharges IS NOT NULL GROUP BY StairCharges";
-$stairChargesResult = $conn->query($stairChargesQuery);
-$stairChargesData = [];
-while ($row = $stairChargesResult->fetch_assoc()) {
-    $stairChargesData[] = $row;
+// Fetch data for Bookings by Time Slot
+$bookingsByTimeSlotQuery = "
+    SELECT TimeSlot, COUNT(*) AS BookingCount
+    FROM Bookings
+    GROUP BY TimeSlot;
+";
+$bookingsByTimeSlotResult = $conn->query($bookingsByTimeSlotQuery);
+$bookingsByTimeSlotData = [];
+while ($row = $bookingsByTimeSlotResult->fetch_assoc()) {
+    $bookingsByTimeSlotData[] = $row;
 }
 
-// Fetch data for bookings by piano charges
-$pianoChargesQuery = "SELECT PianoCharge, COUNT(*) AS BookingCount FROM Bookings WHERE PianoCharge IS NOT NULL GROUP BY PianoCharge";
-$pianoChargesResult = $conn->query($pianoChargesQuery);
-$pianoChargesData = [];
-while ($row = $pianoChargesResult->fetch_assoc()) {
-    $pianoChargesData[] = $row;
+// Fetch data for Revenue from Bookings Over Time
+$revenueOverTimeQuery = "
+    SELECT DATE_FORMAT(BookingDate, '%Y-%m') AS Month, SUM(CalloutFee + Rate + StairCharges + PianoCharge + PoolTableCharge) AS TotalRevenue
+    FROM Bookings
+    GROUP BY Month
+    ORDER BY Month;
+";
+$revenueOverTimeResult = $conn->query($revenueOverTimeQuery);
+$revenueOverTimeData = [];
+while ($row = $revenueOverTimeResult->fetch_assoc()) {
+    $revenueOverTimeData[] = $row;
 }
 
-// Fetch data for bookings by pool table charges
-$poolTableChargesQuery = "SELECT PoolTableCharge, COUNT(*) AS BookingCount FROM Bookings WHERE PoolTableCharge IS NOT NULL GROUP BY PoolTableCharge";
-$poolTableChargesResult = $conn->query($poolTableChargesQuery);
-$poolTableChargesData = [];
-while ($row = $poolTableChargesResult->fetch_assoc()) {
-    $poolTableChargesData[] = $row;
+// Fetch data for Average Callout Fee and Rate per Booking
+$averageFeeRateQuery = "
+    SELECT AVG(CalloutFee) AS AvgCalloutFee, AVG(Rate) AS AvgRate
+    FROM Bookings;
+";
+$averageFeeRateResult = $conn->query($averageFeeRateQuery);
+$averageFeeRateData = $averageFeeRateResult->fetch_assoc();
+
+// Fetch data for Instances of Additional Charges (Stair, Piano, Pool Table)
+$additionalChargesQuery = "
+    SELECT 
+        COUNT(CASE WHEN StairCharges > 0 THEN 1 END) AS StairChargeInstances,
+        COUNT(CASE WHEN PianoCharge > 0 THEN 1 END) AS PianoChargeInstances,
+        COUNT(CASE WHEN PoolTableCharge > 0 THEN 1 END) AS PoolTableChargeInstances
+    FROM Bookings;
+";
+$additionalChargesResult = $conn->query($additionalChargesQuery);
+$additionalChargesData = $additionalChargesResult->fetch_assoc();
+
+// Fetch data for Average Booking Duration
+$averageBookingDurationQuery = "
+    SELECT Bedrooms, AVG(DATEDIFF(MovingDate, BookingDate)) AS AvgDuration
+    FROM Bookings
+    GROUP BY Bedrooms;
+";
+$averageBookingDurationResult = $conn->query($averageBookingDurationQuery);
+$averageBookingDurationData = [];
+while ($row = $averageBookingDurationResult->fetch_assoc()) {
+    $averageBookingDurationData[] = $row;
 }
-
-
 
 ?>
 
@@ -327,66 +375,72 @@ while ($row = $poolTableChargesResult->fetch_assoc()) {
                 <h2>Statistics</h2>
 
                 <div class="row">
+                    <!-- Number of Bookings per Month Chart -->
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <i class="fa fa-adjust toggle-icon" id="toggleBookingsPerMonthChart" aria-hidden="true"></i>
+                            <canvas id="bookingsPerMonthChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Bookings by Weekday Chart -->
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <i class="fa fa-adjust toggle-icon" id="toggleBookingsByWeekdayChart" aria-hidden="true"></i>
+                            <canvas id="bookingsByWeekdayChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
                     <!-- Bookings by Bedrooms Chart -->
                     <div class="col-md-6">
                         <div class="chart-container">
-                            <i class="fa fa-adjust toggle-icon" id="toggleBedroomsChart" aria-hidden="true"></i>
+                            <i class="fa fa-adjust toggle-icon" id="toggleBookingsByBedroomsChart" aria-hidden="true"></i>
                             <canvas id="bookingsByBedroomsChart"></canvas>
                         </div>
                     </div>
                     <!-- Bookings by Truck Size Chart -->
                     <div class="col-md-6">
                         <div class="chart-container">
-                            <i class="fa fa-adjust toggle-icon" id="toggleTruckSizeChart" aria-hidden="true"></i>
+                            <i class="fa fa-adjust toggle-icon" id="toggleBookingsByTruckSizeChart" aria-hidden="true"></i>
                             <canvas id="bookingsByTruckSizeChart"></canvas>
                         </div>
                     </div>
                 </div>
 
                 <div class="row">
-                    <!-- Bedrooms by Truck Size Chart -->
+                    <!-- Bookings by Time Slot Chart -->
                     <div class="col-md-6">
                         <div class="chart-container">
-                            <i class="fa fa-adjust toggle-icon" id="toggleBedroomsTruckSizeChart" aria-hidden="true"></i>
-                            <canvas id="bedroomsByTruckSizeChart"></canvas>
+                            <i class="fa fa-adjust toggle-icon" id="toggleBookingsByTimeSlotChart" aria-hidden="true"></i>
+                            <canvas id="bookingsByTimeSlotChart"></canvas>
                         </div>
                     </div>
-                    <!-- Bookings by Callout Fee Chart -->
+                    <!-- Revenue from Bookings Over Time Chart -->
                     <div class="col-md-6">
                         <div class="chart-container">
-                            <i class="fa fa-adjust toggle-icon" id="toggleCalloutFeeChart" aria-hidden="true"></i>
-                            <canvas id="bookingsByCalloutFeeChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <!-- Bookings by Stair Charges Chart -->
-                    <div class="col-md-6">
-                        <div class="chart-container">
-                            <i class="fa fa-adjust toggle-icon" id="toggleStairChargesChart" aria-hidden="true"></i>
-                            <canvas id="bookingsByStairChargesChart"></canvas>
-                        </div>
-                    </div>
-                    <!-- Bookings by Piano Charges Chart -->
-                    <div class="col-md-6">
-                        <div class="chart-container">
-                            <i class="fa fa-adjust toggle-icon" id="togglePianoChargesChart" aria-hidden="true"></i>
-                            <canvas id="bookingsByPianoChargesChart"></canvas>
+                            <i class="fa fa-adjust toggle-icon" id="toggleRevenueOverTimeChart" aria-hidden="true"></i>
+                            <canvas id="revenueOverTimeChart"></canvas>
                         </div>
                     </div>
                 </div>
 
                 <div class="row">
-                    <!-- Bookings by Pool Table Charges Chart -->
+                    <!-- Instances of Additional Charges Chart -->
                     <div class="col-md-6">
                         <div class="chart-container">
-                            <i class="fa fa-adjust toggle-icon" id="togglePoolTableChargesChart" aria-hidden="true"></i>
-                            <canvas id="bookingsByPoolTableChargesChart"></canvas>
+                            <i class="fa fa-adjust toggle-icon" id="toggleAdditionalChargesChart" aria-hidden="true"></i>
+                            <canvas id="additionalChargesChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Average Booking Duration Chart -->
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <i class="fa fa-adjust toggle-icon" id="toggleAverageBookingDurationChart" aria-hidden="true"></i>
+                            <canvas id="averageBookingDurationChart"></canvas>
                         </div>
                     </div>
                 </div>
-
             </main>
         </div>
     </div>
@@ -396,33 +450,37 @@ while ($row = $poolTableChargesResult->fetch_assoc()) {
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
+        // Prepare data for Number of Bookings per Month chart
+        var bookingsPerMonthLabels = <?= json_encode(array_column($bookingsPerMonthData, 'Month')) ?>;
+        var bookingsPerMonthData = <?= json_encode(array_column($bookingsPerMonthData, 'BookingCount')) ?>;
+
+        // Prepare data for Bookings by Weekday chart
+        var bookingsByWeekdayLabels = <?= json_encode(array_column($bookingsByWeekdayData, 'Weekday')) ?>;
+        var bookingsByWeekdayData = <?= json_encode(array_column($bookingsByWeekdayData, 'BookingCount')) ?>;
+
         // Prepare data for Bookings by Bedrooms chart
-        var bedroomsLabels = <?= json_encode(array_column($bedroomsData, 'Bedrooms')) ?>;
-        var bedroomsData = <?= json_encode(array_column($bedroomsData, 'BookingCount')) ?>;
+        var bookingsByBedroomsLabels = <?= json_encode(array_column($bookingsByBedroomsData, 'Bedrooms')) ?>;
+        var bookingsByBedroomsData = <?= json_encode(array_column($bookingsByBedroomsData, 'BookingCount')) ?>;
 
         // Prepare data for Bookings by Truck Size chart
-        var truckSizeLabels = <?= json_encode(array_column($truckSizeData, 'TruckSize')) ?>;
-        var truckSizeData = <?= json_encode(array_column($truckSizeData, 'BookingCount')) ?>;
+        var bookingsByTruckSizeLabels = <?= json_encode(array_column($bookingsByTruckSizeData, 'TruckSize')) ?>;
+        var bookingsByTruckSizeData = <?= json_encode(array_column($bookingsByTruckSizeData, 'BookingCount')) ?>;
 
-        // Prepare data for Bedrooms by Truck Size chart
-        var bedroomsTruckSizeLabels = <?= json_encode(array_column($bedroomsTruckSizeData, 'TruckSize')) ?>;
-        var bedroomsTruckSizeData = <?= json_encode(array_column($bedroomsTruckSizeData, 'BookingCount')) ?>;
+        // Prepare data for Bookings by Time Slot chart
+        var bookingsByTimeSlotLabels = <?= json_encode(array_column($bookingsByTimeSlotData, 'TimeSlot')) ?>;
+        var bookingsByTimeSlotData = <?= json_encode(array_column($bookingsByTimeSlotData, 'BookingCount')) ?>;
 
-        // Prepare data for Bookings by Callout Fee chart
-        var calloutFeeLabels = <?= json_encode(array_column($calloutFeeData, 'CalloutFee')) ?>;
-        var calloutFeeData = <?= json_encode(array_column($calloutFeeData, 'BookingCount')) ?>;
+        // Prepare data for Revenue from Bookings Over Time chart
+        var revenueOverTimeLabels = <?= json_encode(array_column($revenueOverTimeData, 'Month')) ?>;
+        var revenueOverTimeData = <?= json_encode(array_column($revenueOverTimeData, 'TotalRevenue')) ?>;
 
-        // Prepare data for Bookings by Stair Charges chart
-        var stairChargesLabels = <?= json_encode(array_column($stairChargesData, 'StairCharges')) ?>;
-        var stairChargesData = <?= json_encode(array_column($stairChargesData, 'BookingCount')) ?>;
+        // Prepare data for Instances of Additional Charges chart
+        var additionalChargesLabels = ['Stair Charge Instances', 'Piano Charge Instances', 'Pool Table Charge Instances'];
+        var additionalChargesData = [<?= $additionalChargesData['StairChargeInstances'] ?>, <?= $additionalChargesData['PianoChargeInstances'] ?>, <?= $additionalChargesData['PoolTableChargeInstances'] ?>];
 
-        // Prepare data for Bookings by Piano Charges chart
-        var pianoChargesLabels = <?= json_encode(array_column($pianoChargesData, 'PianoCharge')) ?>;
-        var pianoChargesData = <?= json_encode(array_column($pianoChargesData, 'BookingCount')) ?>;
-
-        // Prepare data for Bookings by Pool Table Charges chart
-        var poolTableChargesLabels = <?= json_encode(array_column($poolTableChargesData, 'PoolTableCharge')) ?>;
-        var poolTableChargesData = <?= json_encode(array_column($poolTableChargesData, 'BookingCount')) ?>;
+        // Prepare data for Average Booking Duration chart
+        var averageBookingDurationLabels = <?= json_encode(array_column($averageBookingDurationData, 'Bedrooms')) ?>;
+        var averageBookingDurationData = <?= json_encode(array_column($averageBookingDurationData, 'AvgDuration')) ?>;
 
         // Function to create charts
         function createChart(ctx, type, labels, data, label) {
@@ -433,27 +491,27 @@ while ($row = $poolTableChargesResult->fetch_assoc()) {
                     datasets: [{
                         label: label,
                         data: data,
-                        backgroundColor: type === 'pie' ? [
+                        backgroundColor: [
                             'rgba(255, 99, 132, 0.2)',
                             'rgba(54, 162, 235, 0.2)',
                             'rgba(255, 206, 86, 0.2)',
                             'rgba(75, 192, 192, 0.2)',
                             'rgba(153, 102, 255, 0.2)',
                             'rgba(255, 159, 64, 0.2)'
-                        ] : 'rgba(75, 192, 192, 0.2)',
-                        borderColor: type === 'pie' ? [
+                        ],
+                        borderColor: [
                             'rgba(255, 99, 132, 1)',
                             'rgba(54, 162, 235, 1)',
                             'rgba(255, 206, 86, 1)',
                             'rgba(75, 192, 192, 1)',
                             'rgba(153, 102, 255, 1)',
                             'rgba(255, 159, 64, 1)'
-                        ] : 'rgba(75, 192, 192, 1)',
+                        ],
                         borderWidth: 1
                     }]
                 },
                 options: {
-                    scales: type === 'pie' ? {} : {
+                    scales: type === 'pie' || type === 'doughnut' || type === 'polarArea' ? {} : {
                         y: {
                             beginAtZero: true
                         }
@@ -466,51 +524,69 @@ while ($row = $poolTableChargesResult->fetch_assoc()) {
         var chartType = 'bar';
 
         // Create charts
-        var bedroomsChart = createChart(document.getElementById('bookingsByBedroomsChart').getContext('2d'), chartType, bedroomsLabels, bedroomsData, 'Bookings by Bedrooms');
-        var truckSizeChart = createChart(document.getElementById('bookingsByTruckSizeChart').getContext('2d'), chartType, truckSizeLabels, truckSizeData, 'Bookings by Truck Size');
-        var bedroomsTruckSizeChart = createChart(document.getElementById('bedroomsByTruckSizeChart').getContext('2d'), chartType, bedroomsTruckSizeLabels, bedroomsTruckSizeData, 'Bedrooms by Truck Size');
-        var calloutFeeChart = createChart(document.getElementById('bookingsByCalloutFeeChart').getContext('2d'), chartType, calloutFeeLabels, calloutFeeData, 'Bookings by Callout Fee');
-        var stairChargesChart = createChart(document.getElementById('bookingsByStairChargesChart').getContext('2d'), chartType, stairChargesLabels, stairChargesData, 'Bookings by Stair Charges');
-        var pianoChargesChart = createChart(document.getElementById('bookingsByPianoChargesChart').getContext('2d'), chartType, pianoChargesLabels, pianoChargesData, 'Bookings by Piano Charges');
-        var poolTableChargesChart = createChart(document.getElementById('bookingsByPoolTableChargesChart').getContext('2d'), chartType, poolTableChargesLabels, poolTableChargesData, 'Bookings by Pool Table Charges');
+        var bookingsPerMonthChart = createChart(document.getElementById('bookingsPerMonthChart').getContext('2d'), chartType, bookingsPerMonthLabels, bookingsPerMonthData, 'Number of Bookings per Month');
+        var bookingsByWeekdayChart = createChart(document.getElementById('bookingsByWeekdayChart').getContext('2d'), chartType, bookingsByWeekdayLabels, bookingsByWeekdayData, 'Bookings by Weekday');
+        var bookingsByBedroomsChart = createChart(document.getElementById('bookingsByBedroomsChart').getContext('2d'), chartType, bookingsByBedroomsLabels, bookingsByBedroomsData, 'Bookings by Bedrooms');
+        var bookingsByTruckSizeChart = createChart(document.getElementById('bookingsByTruckSizeChart').getContext('2d'), chartType, bookingsByTruckSizeLabels, bookingsByTruckSizeData, 'Bookings by Truck Size');
+        var bookingsByTimeSlotChart = createChart(document.getElementById('bookingsByTimeSlotChart').getContext('2d'), chartType, bookingsByTimeSlotLabels, bookingsByTimeSlotData, 'Bookings by Time Slot');
+        var revenueOverTimeChart = createChart(document.getElementById('revenueOverTimeChart').getContext('2d'), chartType, revenueOverTimeLabels, revenueOverTimeData, 'Revenue from Bookings Over Time');
+        var additionalChargesChart = createChart(document.getElementById('additionalChargesChart').getContext('2d'), chartType, additionalChargesLabels, additionalChargesData, 'Instances of Additional Charges');
+        var averageBookingDurationChart = createChart(document.getElementById('averageBookingDurationChart').getContext('2d'), chartType, averageBookingDurationLabels, averageBookingDurationData, 'Average Booking Duration');
 
         // Function to toggle chart type
-        function toggleChart(chart, ctx, labels, data, label) {
-            var newType = chart.config.type === 'bar' ? 'pie' : 'bar';
+        function toggleChart(chart, ctx, labels, data, label, newType) {
             chart.destroy();
             return createChart(ctx, newType, labels, data, label);
         }
 
-        // Toggle chart buttons
-        document.getElementById('toggleBedroomsChart').addEventListener('click', function() {
-            bedroomsChart = toggleChart(bedroomsChart, document.getElementById('bookingsByBedroomsChart').getContext('2d'), bedroomsLabels, bedroomsData, 'Bookings by Bedrooms');
+        // Toggle chart icons
+        document.getElementById('toggleBookingsPerMonthChart').addEventListener('click', function() {
+            var newType = chartType === 'bar' ? 'pie' : chartType === 'pie' ? 'line' : chartType === 'line' ? 'bubble' : chartType === 'bubble' ? 'doughnut' : chartType === 'doughnut' ? 'radar' : chartType === 'radar' ? 'polarArea' : 'bar';
+            bookingsPerMonthChart = toggleChart(bookingsPerMonthChart, document.getElementById('bookingsPerMonthChart').getContext('2d'), bookingsPerMonthLabels, bookingsPerMonthData, 'Number of Bookings per Month', newType);
+            chartType = newType;
         });
 
-        document.getElementById('toggleTruckSizeChart').addEventListener('click', function() {
-            truckSizeChart = toggleChart(truckSizeChart, document.getElementById('bookingsByTruckSizeChart').getContext('2d'), truckSizeLabels, truckSizeData, 'Bookings by Truck Size');
+        document.getElementById('toggleBookingsByWeekdayChart').addEventListener('click', function() {
+            var newType = chartType === 'bar' ? 'pie' : chartType === 'pie' ? 'line' : chartType === 'line' ? 'bubble' : chartType === 'bubble' ? 'doughnut' : chartType === 'doughnut' ? 'radar' : chartType === 'radar' ? 'polarArea' : 'bar';
+            bookingsByWeekdayChart = toggleChart(bookingsByWeekdayChart, document.getElementById('bookingsByWeekdayChart').getContext('2d'), bookingsByWeekdayLabels, bookingsByWeekdayData, 'Bookings by Weekday', newType);
+            chartType = newType;
         });
 
-        document.getElementById('toggleBedroomsTruckSizeChart').addEventListener('click', function() {
-            bedroomsTruckSizeChart = toggleChart(bedroomsTruckSizeChart, document.getElementById('bedroomsByTruckSizeChart').getContext('2d'), bedroomsTruckSizeLabels, bedroomsTruckSizeData, 'Bedrooms by Truck Size');
+        document.getElementById('toggleBookingsByBedroomsChart').addEventListener('click', function() {
+            var newType = chartType === 'bar' ? 'pie' : chartType === 'pie' ? 'line' : chartType === 'line' ? 'bubble' : chartType === 'bubble' ? 'doughnut' : chartType === 'doughnut' ? 'radar' : chartType === 'radar' ? 'polarArea' : 'bar';
+            bookingsByBedroomsChart = toggleChart(bookingsByBedroomsChart, document.getElementById('bookingsByBedroomsChart').getContext('2d'), bookingsByBedroomsLabels, bookingsByBedroomsData, 'Bookings by Bedrooms', newType);
+            chartType = newType;
         });
 
-        document.getElementById('toggleCalloutFeeChart').addEventListener('click', function() {
-            calloutFeeChart = toggleChart(calloutFeeChart, document.getElementById('bookingsByCalloutFeeChart').getContext('2d'), calloutFeeLabels, calloutFeeData, 'Bookings by Callout Fee');
+        document.getElementById('toggleBookingsByTruckSizeChart').addEventListener('click', function() {
+            var newType = chartType === 'bar' ? 'pie' : chartType === 'pie' ? 'line' : chartType === 'line' ? 'bubble' : chartType === 'bubble' ? 'doughnut' : chartType === 'doughnut' ? 'radar' : chartType === 'radar' ? 'polarArea' : 'bar';
+            bookingsByTruckSizeChart = toggleChart(bookingsByTruckSizeChart, document.getElementById('bookingsByTruckSizeChart').getContext('2d'), bookingsByTruckSizeLabels, bookingsByTruckSizeData, 'Bookings by Truck Size', newType);
+            chartType = newType;
         });
 
-        document.getElementById('toggleStairChargesChart').addEventListener('click', function() {
-            stairChargesChart = toggleChart(stairChargesChart, document.getElementById('bookingsByStairChargesChart').getContext('2d'), stairChargesLabels, stairChargesData, 'Bookings by Stair Charges');
+        document.getElementById('toggleBookingsByTimeSlotChart').addEventListener('click', function() {
+            var newType = chartType === 'bar' ? 'pie' : chartType === 'pie' ? 'line' : chartType === 'line' ? 'bubble' : chartType === 'bubble' ? 'doughnut' : chartType === 'doughnut' ? 'radar' : chartType === 'radar' ? 'polarArea' : 'bar';
+            bookingsByTimeSlotChart = toggleChart(bookingsByTimeSlotChart, document.getElementById('bookingsByTimeSlotChart').getContext('2d'), bookingsByTimeSlotLabels, bookingsByTimeSlotData, 'Bookings by Time Slot', newType);
+            chartType = newType;
         });
 
-        document.getElementById('togglePianoChargesChart').addEventListener('click', function() {
-            pianoChargesChart = toggleChart(pianoChargesChart, document.getElementById('bookingsByPianoChargesChart').getContext('2d'), pianoChargesLabels, pianoChargesData, 'Bookings by Piano Charges');
+        document.getElementById('toggleRevenueOverTimeChart').addEventListener('click', function() {
+            var newType = chartType === 'bar' ? 'pie' : chartType === 'pie' ? 'line' : chartType === 'line' ? 'bubble' : chartType === 'bubble' ? 'doughnut' : chartType === 'doughnut' ? 'radar' : chartType === 'radar' ? 'polarArea' : 'bar';
+            revenueOverTimeChart = toggleChart(revenueOverTimeChart, document.getElementById('revenueOverTimeChart').getContext('2d'), revenueOverTimeLabels, revenueOverTimeData, 'Revenue from Bookings Over Time', newType);
+            chartType = newType;
         });
 
-        document.getElementById('togglePoolTableChargesChart').addEventListener('click', function() {
-            poolTableChargesChart = toggleChart(poolTableChargesChart, document.getElementById('bookingsByPoolTableChargesChart').getContext('2d'), poolTableChargesLabels, poolTableChargesData, 'Bookings by Pool Table Charges');
+        document.getElementById('toggleAdditionalChargesChart').addEventListener('click', function() {
+            var newType = chartType === 'bar' ? 'pie' : chartType === 'pie' ? 'line' : chartType === 'line' ? 'bubble' : chartType === 'bubble' ? 'doughnut' : chartType === 'doughnut' ? 'radar' : chartType === 'radar' ? 'polarArea' : 'bar';
+            additionalChargesChart = toggleChart(additionalChargesChart, document.getElementById('additionalChargesChart').getContext('2d'), additionalChargesLabels, additionalChargesData, 'Instances of Additional Charges', newType);
+            chartType = newType;
+        });
+
+        document.getElementById('toggleAverageBookingDurationChart').addEventListener('click', function() {
+            var newType = chartType === 'bar' ? 'pie' : chartType === 'pie' ? 'line' : chartType === 'line' ? 'bubble' : chartType === 'bubble' ? 'doughnut' : chartType === 'doughnut' ? 'radar' : chartType === 'radar' ? 'polarArea' : 'bar';
+            averageBookingDurationChart = toggleChart(averageBookingDurationChart, document.getElementById('averageBookingDurationChart').getContext('2d'), averageBookingDurationLabels, averageBookingDurationData, 'Average Booking Duration', newType);
+            chartType = newType;
         });
     </script>
-
-</body>
 
 </html>
