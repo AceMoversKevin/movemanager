@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
 }
 
 // Fetch employees except Admins and SuperAdmins
-$query = "SELECT PhoneNo, Name, Email, EmployeeType, isActive, PayRate FROM Employees WHERE EmployeeType != 'Admin' AND EmployeeType != 'SuperAdmin'";
+$query = "SELECT PhoneNo, Name, Email, EmployeeType, isActive, PayRate, ABN, GST FROM Employees WHERE EmployeeType != 'Admin' AND EmployeeType != 'SuperAdmin'";
 $result = $conn->query($query);
 
 ?>
@@ -59,6 +59,8 @@ $result = $conn->query($query);
                             <th>Employee Type</th>
                             <th>Active</th>
                             <th>Pay Rate</th>
+                            <th>ABN</th>
+                            <th>GST</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -73,6 +75,8 @@ $result = $conn->query($query);
                                 echo "<td>" . htmlspecialchars($row["EmployeeType"]) . "</td>";
                                 echo "<td>" . ($row["isActive"] ? 'Yes' : 'No') . "</td>";
                                 echo "<td>" . htmlspecialchars($row["PayRate"]) . "</td>";
+                                echo "<td>" . htmlspecialchars($row["ABN"]) . "</td>";
+                                echo "<td>" . htmlspecialchars($row["GST"]) . "</td>";
                                 echo "<td><a href='editEmployee.php?PhoneNo=" . htmlspecialchars($row["PhoneNo"]) . "' class='btn btn-warning btn-sm'>Edit</a></td>";
                                 echo "</tr>";
                             }

@@ -17,10 +17,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $employeeType = filter_input(INPUT_POST, 'employeeType', FILTER_SANITIZE_STRING);
     $isActive = filter_input(INPUT_POST, 'isActive', FILTER_SANITIZE_NUMBER_INT);
     $payRate = filter_input(INPUT_POST, 'payRate', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+    $abn = filter_input(INPUT_POST, 'abn', FILTER_SANITIZE_STRING);
+    $gst = filter_input(INPUT_POST, 'gst', FILTER_SANITIZE_NUMBER_INT);
 
     // Prepare the SQL query to update employee details
-    $stmt = $conn->prepare("UPDATE Employees SET Name=?, Email=?, EmployeeType=?, isActive=?, PayRate=? WHERE PhoneNo=?");
-    $stmt->bind_param("sssids", $name, $email, $employeeType, $isActive, $payRate, $phoneNo);
+    $stmt = $conn->prepare("UPDATE Employees SET Name=?, Email=?, EmployeeType=?, isActive=?, PayRate=?, ABN=?, GST=? WHERE PhoneNo=?");
+    $stmt->bind_param("sssidsis", $name, $email, $employeeType, $isActive, $payRate, $abn, $gst, $phoneNo);
 
     // Execute the query and check if it was successful
     if ($stmt->execute()) {
@@ -35,10 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt->close();
 } else {
     // Fetch employee details
-    $stmt = $conn->prepare("SELECT Name, Email, EmployeeType, isActive, PayRate FROM Employees WHERE PhoneNo=?");
+    $stmt = $conn->prepare("SELECT Name, Email, EmployeeType, isActive, PayRate, ABN, GST FROM Employees WHERE PhoneNo=?");
     $stmt->bind_param("s", $phoneNo);
     $stmt->execute();
-    $stmt->bind_result($name, $email, $employeeType, $isActive, $payRate);
+    $stmt->bind_result($name, $email, $employeeType, $isActive, $payRate, $abn, $gst);
     $stmt->fetch();
     $stmt->close();
 }
@@ -75,6 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <select class="form-control" id="employeeType" name="employeeType">
                     <option value="Helper" <?= ($employeeType == 'Helper') ? 'selected' : '' ?>>Helper</option>
                     <option value="Driver" <?= ($employeeType == 'Driver') ? 'selected' : '' ?>>Driver</option>
+                    <option value="Admin" <?= ($employeeType == 'Admin') ? 'selected' : '' ?>>Admin</option>
+                    <option value="SuperAdmin" <?= ($employeeType == 'SuperAdmin') ? 'selected' : '' ?>>SuperAdmin</option>
                 </select>
             </div>
             <div class="form-group">
@@ -87,6 +91,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="form-group">
                 <label for="payRate">Pay Rate</label>
                 <input type="number" step="0.01" class="form-control" id="payRate" name="payRate" value="<?= htmlspecialchars($payRate) ?>" required>
+            </div>
+            <div class="form-group">
+                <label for="abn">ABN</label>
+                <input type="text" class="form-control" id="abn" name="abn" value="<?= htmlspecialchars($abn) ?>" required>
+            </div>
+            <div class="form-group">
+                <label for="gst">GST</label>
+                <select class="form-control" id="gst" name="gst" required>
+                    <option value="0" <?= $gst == 0 ? 'selected' : '' ?>>No</option>
+                    <option value="1" <?= $gst == 1 ? 'selected' : '' ?>>Yes</option>
+                </select>
             </div>
             <button type="submit" class="btn btn-primary">Save Changes</button>
             <a href="employeeDetails.php" class="btn btn-secondary">Cancel</a>

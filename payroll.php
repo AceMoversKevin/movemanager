@@ -9,7 +9,20 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'SuperAdmin')) {
     exit;
 }
 
-// Fetch work hours data separated by pay periods
+// Fetch all unique pay periods
+$payPeriodQuery = "SELECT DISTINCT WeekStartDate FROM WorkHours ORDER BY WeekStartDate DESC";
+$payPeriodResult = $conn->query($payPeriodQuery);
+$payPeriodsList = [];
+if ($payPeriodResult->num_rows > 0) {
+    while ($row = $payPeriodResult->fetch_assoc()) {
+        $payPeriodsList[] = $row['WeekStartDate'];
+    }
+}
+
+// Get the selected pay period from the request or default to the latest
+$selectedPayPeriod = isset($_GET['payPeriod']) ? $_GET['payPeriod'] : $payPeriodsList[0];
+
+// Fetch work hours data for the selected pay period
 $query = "
 SELECT 
     e.Name AS EmployeeName,
@@ -22,22 +35,27 @@ SELECT
     SUM(w.HoursWorked) * e.PayRate AS TotalPay
 FROM WorkHours w
 JOIN Employees e ON w.EmployeePhoneNo = e.PhoneNo
-WHERE e.EmployeeType != 'Admin' AND e.EmployeeType != 'SuperAdmin'
+WHERE e.EmployeeType != 'Admin' AND e.EmployeeType != 'SuperAdmin' AND w.WeekStartDate = ?
 GROUP BY e.PhoneNo, w.WeekStartDate
-ORDER BY w.WeekStartDate DESC, e.Name;
+ORDER BY e.Name;
 ";
-$result = $conn->query($query);
+$stmt = $conn->prepare($query);
+$stmt->bind_param("s", $selectedPayPeriod);
+$stmt->execute();
+$result = $stmt->get_result();
 
 // Prepare data for displaying in the table
-$payPeriods = [];
+$employees = [];
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
-        $payPeriods[$row['WeekStartDate']][] = $row;
+        $employees[] = $row;
     }
 }
+$stmt->close();
 
 // Function to format date
-function formatDate($date) {
+function formatDate($date)
+{
     return date("d M Y", strtotime($date));
 }
 ?>
@@ -77,9 +95,22 @@ function formatDate($date) {
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2" id="Main-Heading">Pay Roll</h1>
                 </div>
-                <!-- Dashboard content goes here -->
-                <?php foreach ($payPeriods as $weekStartDate => $employees): ?>
-                    <h3>Pay Period: <?= formatDate($weekStartDate) ?> - <?= formatDate(date('Y-m-d', strtotime($weekStartDate . ' +6 days'))) ?></h3>
+                <!-- Filter by Pay Period -->
+                <form method="GET" action="" class="mb-3">
+                    <div class="form-group">
+                        <label for="payPeriod">Select Pay Period:</label>
+                        <select name="payPeriod" id="payPeriod" class="form-control" onchange="this.form.submit()">
+                            <?php foreach ($payPeriodsList as $payPeriod) : ?>
+                                <option value="<?= htmlspecialchars($payPeriod) ?>" <?= $selectedPayPeriod == $payPeriod ? 'selected' : '' ?>>
+                                    <?= formatDate($payPeriod) ?> - <?= formatDate(date('Y-m-d', strtotime($payPeriod . ' +6 days'))) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </form>
+                <!-- Display Payroll Data -->
+                <?php if (!empty($employees)) : ?>
+                    <h3>Pay Period: <?= formatDate($selectedPayPeriod) ?> - <?= formatDate(date('Y-m-d', strtotime($selectedPayPeriod . ' +6 days'))) ?></h3>
                     <table class="table table-hover">
                         <thead>
                             <tr>
@@ -94,21 +125,23 @@ function formatDate($date) {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($employees as $employee): ?>
+                            <?php foreach ($employees as $employee) : ?>
                                 <tr>
                                     <td><?= htmlspecialchars($employee['EmployeeName']) ?></td>
                                     <td><?= htmlspecialchars($employee['PhoneNo']) ?></td>
-                                    <td><?= htmlspecialchars($employee['PayRate']) ?></td>
+                                    <td>$<?= htmlspecialchars($employee['PayRate']) ?>/h</td>
                                     <td><?= htmlspecialchars($employee['ABN']) ?></td>
                                     <td><?= htmlspecialchars($employee['GST'] == 1 ? 'Yes' : 'No') ?></td>
-                                    <td><?= htmlspecialchars($employee['TotalHoursWorked']) ?></td>
-                                    <td><?= htmlspecialchars($employee['TotalPay']) ?></td>
-                                    <td><a href="editWorkHours.php?PhoneNo=<?= htmlspecialchars($employee['PhoneNo']) ?>&WeekStartDate=<?= htmlspecialchars($weekStartDate) ?>" class="btn btn-warning btn-sm">Edit</a></td>
+                                    <td><?= htmlspecialchars($employee['TotalHoursWorked']) ?> hours</td>
+                                    <td>$<?= htmlspecialchars($employee['TotalPay']) ?></td>
+                                    <td><a href="editWorkHours.php?PhoneNo=<?= htmlspecialchars($employee['PhoneNo']) ?>&WeekStartDate=<?= htmlspecialchars($selectedPayPeriod) ?>" class="btn btn-warning btn-sm">Edit</a></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                <?php endforeach; ?>
+                <?php else : ?>
+                    <p>No records found for the selected pay period.</p>
+                <?php endif; ?>
             </main>
         </div>
     </div>
