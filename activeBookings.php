@@ -19,7 +19,7 @@ $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : '';
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 
 // Handle column visibility
-$allColumns = ['Name', 'Email', 'Phone', 'Bedrooms', 'BookingDate', 'MovingDate', 'PickupLocation', 'DropoffLocation', 'TruckSize', 'CalloutFee', 'Rate', 'Deposit', 'TimeSlot'];
+$allColumns = ['Name', 'Email', 'Phone', 'Bedrooms', 'BookingDate', 'MovingDate', 'PickupLocation', 'DropoffLocation', 'TruckSize', 'CalloutFee', 'Rate', 'Deposit', 'TimeSlot', 'AdditionalDetails'];
 $visibleColumns = isset($_GET['visible_columns']) ? (is_array($_GET['visible_columns']) ? $_GET['visible_columns'] : explode(',', $_GET['visible_columns'])) : $allColumns;
 
 // Fetch active bookings from the database
@@ -27,7 +27,7 @@ $query = "SELECT * FROM Bookings WHERE isActive = 1";
 
 // Add search term filtering
 if ($searchTerm) {
-    $query .= " AND (Name LIKE '%$searchTerm%' OR Email LIKE '%$searchTerm%' OR Phone LIKE '%$searchTerm%' OR Bedrooms LIKE '%$searchTerm%' OR BookingDate LIKE '%$searchTerm%' OR MovingDate LIKE '%$searchTerm%' OR PickupLocation LIKE '%$searchTerm%' OR DropoffLocation LIKE '%$searchTerm%' OR TruckSize LIKE '%$searchTerm%' OR CalloutFee LIKE '%$searchTerm%' OR Rate LIKE '%$searchTerm%' OR Deposit LIKE '%$searchTerm%' OR TimeSlot LIKE '%$searchTerm%')";
+    $query .= " AND (Name LIKE '%$searchTerm%' OR Email LIKE '%$searchTerm%' OR Phone LIKE '%$searchTerm%' OR Bedrooms LIKE '%$searchTerm%' OR BookingDate LIKE '%$searchTerm%' OR MovingDate LIKE '%$searchTerm%' OR PickupLocation LIKE '%$searchTerm%' OR DropoffLocation LIKE '%$searchTerm%' OR TruckSize LIKE '%$searchTerm%' OR CalloutFee LIKE '%$searchTerm%' OR Rate LIKE '%$searchTerm%' OR Deposit LIKE '%$searchTerm%' OR TimeSlot LIKE '%$searchTerm%' OR AdditionalDetails LIKE '%$searchTerm%')";
 }
 
 // Add date filter
@@ -206,6 +206,7 @@ $result = $conn->query($query);
                                 <?php if (in_array('Rate', $visibleColumns)) : ?><th class="sortable" data-sort="Rate">Rate</th><?php endif; ?>
                                 <?php if (in_array('Deposit', $visibleColumns)) : ?><th class="sortable" data-sort="Deposit">Deposit</th><?php endif; ?>
                                 <?php if (in_array('TimeSlot', $visibleColumns)) : ?><th class="sortable" data-sort="TimeSlot">Time Slot</th><?php endif; ?>
+                                <?php if (in_array('AdditionalDetails', $visibleColumns)) : ?><th class="sortable" data-sort="AdditionalDetails">Additional Details</th><?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -236,6 +237,7 @@ $result = $conn->query($query);
                                             <input type="time" class="form-control" value="<?= htmlspecialchars($row['TimeSlot']) ?>" readonly>
                                         </td>
                                     <?php endif; ?>
+                                    <?php if (in_array('AdditionalDetails', $visibleColumns)) : ?><td class="editable" data-field="AdditionalDetails" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['AdditionalDetails']) ?></td><?php endif; ?>
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>
