@@ -9,8 +9,8 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
 }
 
 // Fetch sorting criteria from the query parameters
-$sortColumn = isset($_GET['sort']) ? $_GET['sort'] : 'MovingDate';
-$sortOrder = isset($_GET['order']) && $_GET['order'] === 'desc' ? 'desc' : 'asc';
+$sortColumn = isset($_GET['sort_column']) ? $_GET['sort_column'] : 'MovingDate';
+$sortOrder = isset($_GET['sort_order']) && $_GET['sort_order'] === 'desc' ? 'desc' : 'asc';
 
 // Handle search term and date filter
 $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
@@ -367,14 +367,14 @@ $result = $conn->query($query);
             // Handle sorting
             $('.sortable').on('click', function() {
                 var column = $(this).data('sort');
+                var order = '<?= $sortOrder ?>' === 'asc' ? 'desc' : 'asc';
                 var currentUrl = window.location.href.split('?')[0];
-                var newUrl = currentUrl + '?sort=' + column + '&order=' + ('<?= $sortOrder ?>' === 'asc' ? 'desc' : 'asc') +
+                var newUrl = currentUrl + '?sort_column=' + column + '&sort_order=' + order +
                     '&search=' + encodeURIComponent('<?= $searchTerm ?>') +
                     '&date_filter=' + encodeURIComponent('<?= $dateFilter ?>') +
                     '&start_date=' + encodeURIComponent('<?= $startDate ?>') +
                     '&end_date=' + encodeURIComponent('<?= $endDate ?>') +
-                    '&visible_columns=' + encodeURIComponent('<?= implode(',', $visibleColumns) ?>') +
-                    '&sort_column=' + encodeURIComponent('<?= $sortColumn ?>');
+                    '&visible_columns=' + encodeURIComponent('<?= implode(',', $visibleColumns) ?>');
                 window.location.href = newUrl;
             });
 
