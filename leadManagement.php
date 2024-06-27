@@ -19,15 +19,15 @@ $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : '';
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 
 // Handle column visibility
-$allColumns = ['lead_id', 'lead_name', 'bedrooms', 'pickup', 'dropoff', 'lead_date', 'phone', 'email', 'details', 'booking_status', 'created_at', 'Source'];
-$visibleColumns = isset($_GET['visible_columns']) ? (is_array($_GET['visible_columns']) ? $_GET['visible_columns'] : explode(',', $_GET['visible_columns'])) : $allColumns;
+$allColumns = ['lead_id', 'lead_name', 'bedrooms', 'pickup', 'dropoff', 'lead_date', 'phone', 'email', 'details', 'booking_status', 'created_at', 'Source', 'AssignedTo'];
+$visibleColumns = isset($_GET['visible_columns']) ? (is_array($_GET['visible_columns']) ? $_GET['visible_columns'] : explode(',', $_GET['visible_columns'])) : array_diff($allColumns, ['created_at']);
 
 // Fetch leads from the database
 $query = "SELECT * FROM leads WHERE 1=1";
 
 // Add search term filtering
 if ($searchTerm) {
-    $query .= " AND (lead_id LIKE '%$searchTerm%' OR lead_name LIKE '%$searchTerm%' OR bedrooms LIKE '%$searchTerm%' OR pickup LIKE '%$searchTerm%' OR dropoff LIKE '%$searchTerm%' OR lead_date LIKE '%$searchTerm%' OR phone LIKE '%$searchTerm%' OR email LIKE '%$searchTerm%' OR details LIKE '%$searchTerm%' OR booking_status LIKE '%$searchTerm%' OR created_at LIKE '%$searchTerm%' OR Source LIKE '%$searchTerm%')";
+    $query .= " AND (lead_id LIKE '%$searchTerm%' OR lead_name LIKE '%$searchTerm%' OR bedrooms LIKE '%$searchTerm%' OR pickup LIKE '%$searchTerm%' OR dropoff LIKE '%$searchTerm%' OR lead_date LIKE '%$searchTerm%' OR phone LIKE '%$searchTerm%' OR email LIKE '%$searchTerm%' OR details LIKE '%$searchTerm%' OR booking_status LIKE '%$searchTerm%' OR AssignedTo LIKE '%$searchTerm%' OR Source LIKE '%$searchTerm%')";
 }
 
 // Add date filter
@@ -213,8 +213,9 @@ $result = $conn->query($query);
                                 <?php if (in_array('email', $visibleColumns)) : ?><th class="sortable" data-sort="email">Email</th><?php endif; ?>
                                 <?php if (in_array('details', $visibleColumns)) : ?><th class="sortable" data-sort="details">Details</th><?php endif; ?>
                                 <?php if (in_array('booking_status', $visibleColumns)) : ?><th class="sortable" data-sort="booking_status">Booking Status</th><?php endif; ?>
-                                <?php if (in_array('created_at', $visibleColumns)) : ?><th class="sortable" data-sort="created_at">Created At</th><?php endif; ?>
+                                <?php if (in_array('created_at', $visibleColumns)) : ?><th class="sortable" data-sort="created_at" style="display: none;">Created At</th><?php endif; ?>
                                 <?php if (in_array('Source', $visibleColumns)) : ?><th class="sortable" data-sort="Source">Source</th><?php endif; ?>
+                                <?php if (in_array('AssignedTo', $visibleColumns)) : ?><th class="sortable" data-sort="AssignedTo">Assigned To</th><?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -241,8 +242,9 @@ $result = $conn->query($query);
                                         </td>
                                     <?php endif; ?>
                                     <?php if (in_array('booking_status', $visibleColumns)) : ?><td class="editable" data-field="booking_status" data-id="<?= $row['lead_id'] ?>"><?= htmlspecialchars($row['booking_status']) ?></td><?php endif; ?>
-                                    <?php if (in_array('created_at', $visibleColumns)) : ?><td><?php echo $row['created_at']; ?></td><?php endif; ?>
+                                    <?php if (in_array('created_at', $visibleColumns)) : ?><td style="display: none;"><?php echo $row['created_at']; ?></td><?php endif; ?>
                                     <?php if (in_array('Source', $visibleColumns)) : ?><td class="editable" data-field="Source" data-id="<?= $row['lead_id'] ?>"><?= htmlspecialchars($row['Source']) ?></td><?php endif; ?>
+                                    <?php if (in_array('AssignedTo', $visibleColumns)) : ?><td class="editable" data-field="AssignedTo" data-id="<?= $row['lead_id'] ?>"><?= htmlspecialchars($row['AssignedTo']) ?></td><?php endif; ?>
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>
