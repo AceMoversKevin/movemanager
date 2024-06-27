@@ -62,8 +62,8 @@
                             </ul>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                Analytics
+                            <a class="nav-link" href="leadManagement.php">
+                                Leads
                             </a>
                         </li>
 
