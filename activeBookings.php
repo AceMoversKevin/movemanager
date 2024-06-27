@@ -109,6 +109,15 @@ $result = $conn->query($query);
             cursor: pointer;
             text-decoration: underline;
         }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .table th,
+        .table td {
+            white-space: nowrap;
+        }
     </style>
 </head>
 
@@ -196,9 +205,7 @@ $result = $conn->query($query);
                                 <?php if (in_array('CalloutFee', $visibleColumns)) : ?><th class="sortable" data-sort="CalloutFee">Callout Fee</th><?php endif; ?>
                                 <?php if (in_array('Rate', $visibleColumns)) : ?><th class="sortable" data-sort="Rate">Rate</th><?php endif; ?>
                                 <?php if (in_array('Deposit', $visibleColumns)) : ?><th class="sortable" data-sort="Deposit">Deposit</th><?php endif; ?>
-                                <?php if (in_array('TimeSlot', $visibleColumns)) : ?>
                                 <?php if (in_array('TimeSlot', $visibleColumns)) : ?><th class="sortable" data-sort="TimeSlot">Time Slot</th><?php endif; ?>
-                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
