@@ -1,6 +1,5 @@
 <?php
 session_start();
-// Include db.php for database connection
 require 'db.php';
 
 // Check if the user is logged in, otherwise redirect to login page
@@ -9,35 +8,78 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
     exit;
 }
 
-// Back end logic
+// Fetch sorting criteria from the query parameters
+$sortColumn = isset($_GET['sort']) ? $_GET['sort'] : 'MovingDate';
+$sortOrder = isset($_GET['order']) && $_GET['order'] === 'desc' ? 'desc' : 'asc';
+
+// Handle search term and date filter
+$searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
+$dateFilter = isset($_GET['date_filter']) ? $_GET['date_filter'] : '';
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : '';
+$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
+
+// Handle column visibility
+$allColumns = ['Name', 'Email', 'Phone', 'Bedrooms', 'BookingDate', 'MovingDate', 'PickupLocation', 'DropoffLocation', 'TruckSize', 'CalloutFee', 'Rate', 'Deposit', 'TimeSlot'];
+$visibleColumns = isset($_GET['visible_columns']) ? (is_array($_GET['visible_columns']) ? $_GET['visible_columns'] : explode(',', $_GET['visible_columns'])) : $allColumns;
+
 // Fetch active bookings from the database
 $query = "SELECT * FROM Bookings WHERE isActive = 1";
 
-// Check if sorting criteria is provided
-if (isset($_GET['movingDate']) && !empty($_GET['movingDate'])) {
-    $movingDate = $_GET['movingDate'];
-    $query .= " AND MovingDate = '$movingDate'";
+// Add search term filtering
+if ($searchTerm) {
+    $query .= " AND (Name LIKE '%$searchTerm%' OR Email LIKE '%$searchTerm%' OR Phone LIKE '%$searchTerm%' OR Bedrooms LIKE '%$searchTerm%' OR BookingDate LIKE '%$searchTerm%' OR MovingDate LIKE '%$searchTerm%' OR PickupLocation LIKE '%$searchTerm%' OR DropoffLocation LIKE '%$searchTerm%' OR TruckSize LIKE '%$searchTerm%' OR CalloutFee LIKE '%$searchTerm%' OR Rate LIKE '%$searchTerm%' OR Deposit LIKE '%$searchTerm%' OR TimeSlot LIKE '%$searchTerm%')";
 }
 
-if (isset($_GET['bookingDate']) && !empty($_GET['bookingDate'])) {
-    $bookingDate = $_GET['bookingDate'];
-    $query .= " AND BookingDate = '$bookingDate'";
+// Add date filter
+if ($dateFilter) {
+    switch ($dateFilter) {
+        case 'today':
+            $query .= " AND DATE(MovingDate) = CURDATE()";
+            break;
+        case 'next_day':
+            $query .= " AND DATE(MovingDate) = CURDATE() + INTERVAL 1 DAY";
+            break;
+        case 'next_2_days':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 2 DAY";
+            break;
+        case 'next_3_days':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 3 DAY";
+            break;
+        case 'next_week':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 WEEK";
+            break;
+        case 'next_month':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 MONTH";
+            break;
+        case 'next_year':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 YEAR";
+            break;
+        case 'current_month':
+            $query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE()) AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
+            break;
+        case 'last_month':
+            $query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)";
+            break;
+        case 'current_year':
+            $query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
+            break;
+        case 'last_year':
+            $query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 YEAR)";
+            break;
+        case 'date_range':
+            if ($startDate && $endDate) {
+                $query .= " AND MovingDate BETWEEN '$startDate' AND '$endDate'";
+            }
+            break;
+        default:
+            break;
+    }
 }
 
-if (isset($_GET['movingDateStart']) && isset($_GET['movingDateEnd']) && !empty($_GET['movingDateStart']) && !empty($_GET['movingDateEnd'])) {
-    $movingDateStart = $_GET['movingDateStart'];
-    $movingDateEnd = $_GET['movingDateEnd'];
-    $query .= " AND MovingDate BETWEEN '$movingDateStart' AND '$movingDateEnd'";
-}
-
-if (isset($_GET['bookingDateStart']) && isset($_GET['bookingDateEnd']) && !empty($_GET['bookingDateStart']) && !empty($_GET['bookingDateEnd'])) {
-    $bookingDateStart = $_GET['bookingDateStart'];
-    $bookingDateEnd = $_GET['bookingDateEnd'];
-    $query .= " AND BookingDate BETWEEN '$bookingDateStart' AND '$bookingDateEnd'";
-}
+// Add sorting criteria to the query
+$query .= " ORDER BY $sortColumn $sortOrder";
 
 $result = $conn->query($query);
-
 ?>
 
 <!DOCTYPE html>
@@ -50,15 +92,27 @@ $result = $conn->query($query);
     <title>Active Bookings</title>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <!-- Additional styles -->
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="activeBookings.css">
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        .editable {
+            cursor: pointer;
+        }
 
+        .editable:hover {
+            background-color: #f0f0f0;
+        }
+
+        .sortable:hover {
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    </style>
 </head>
 
 <body>
-
     <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
         <a class="navbar-brand col-md-3 col-lg-2 mr-0 px-3" href="index.php">AceMovers</a>
         <ul class="navbar-nav px-3">
@@ -70,218 +124,262 @@ $result = $conn->query($query);
 
     <div class="container-fluid">
         <div class="row">
-
             <?php include 'navbar.php'; ?>
 
-            <!-- Main Content -->
             <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2" id="Main-Heading">Active Bookings</h1>
                 </div>
 
-                <form method="GET" action="">
-                    <div class="form-row">
-                        <div class="form-group col-md-3">
-                            <label for="movingDate">Moving Date</label>
-                            <input type="date" class="form-control" id="movingDate" name="movingDate">
-                        </div>
-                        <div class="form-group col-md-3">
-                            <label for="bookingDate">Booking Date</label>
-                            <input type="date" class="form-control" id="bookingDate" name="bookingDate">
-                        </div>
-                        <div class="form-group col-md-3">
-                            <label for="movingDateStart">Moving Date Range Start</label>
-                            <input type="date" class="form-control" id="movingDateStart" name="movingDateStart">
-                        </div>
-                        <div class="form-group col-md-3">
-                            <label for="movingDateEnd">Moving Date Range End</label>
-                            <input type="date" class="form-control" id="movingDateEnd" name="movingDateEnd">
-                        </div>
-                        <div class="form-group col-md-3">
-                            <label for="bookingDateStart">Booking Date Range Start</label>
-                            <input type="date" class="form-control" id="bookingDateStart" name="bookingDateStart">
-                        </div>
-                        <div class="form-group col-md-3">
-                            <label for="bookingDateEnd">Booking Date Range End</label>
-                            <input type="date" class="form-control" id="bookingDateEnd" name="bookingDateEnd">
-                        </div>
-                        <div class="form-group col-md-12">
-                            <button type="submit" class="btn btn-primary">Sort</button>
-                        </div>
+                <form method="GET" action="activeBookings.php" class="mb-3">
+                    <input type="text" name="search" value="<?php echo htmlspecialchars($searchTerm); ?>" placeholder="Search Bookings" class="form-control" style="display:inline-block; width: auto;">
+                    <select name="date_filter" id="date_filter" class="form-control" style="display:inline-block; width: auto;">
+                        <option value="">Select Date Filter</option>
+                        <option value="today">Today</option>
+                        <option value="next_day">Next Day</option>
+                        <option value="next_2_days">Next 2 Days</option>
+                        <option value="next_3_days">Next 3 Days</option>
+                        <option value="next_week">Next Week</option>
+                        <option value="next_month">Next Month</option>
+                        <option value="next_year">Next Year</option>
+                        <option value="current_month">Current Month</option>
+                        <option value="last_month">Last Month</option>
+                        <option value="current_year">Current Year</option>
+                        <option value="last_year">Last Year</option>
+                        <option value="date_range">Date Range</option>
+                    </select>
+                    <select name="sort_column" id="sort_column" class="form-control" style="display:inline-block; width: auto;">
+                        <option value="MovingDate" <?= $sortColumn == 'MovingDate' ? 'selected' : '' ?>>Sort by Moving Date</option>
+                        <option value="BookingDate" <?= $sortColumn == 'BookingDate' ? 'selected' : '' ?>>Sort by Booking Date</option>
+                    </select>
+                    <input type="date" name="start_date" id="start_date" class="form-control" style="display:inline-block; width: auto;">
+                    <input type="date" name="end_date" id="end_date" class="form-control" style="display:inline-block; width: auto;">
+                    <div class="mb-2">
+                        <button type="button" id="select_all" class="btn btn-outline-secondary btn-sm">Select All</button>
+                        <button type="button" id="deselect_all" class="btn btn-outline-secondary btn-sm">Deselect All</button>
                     </div>
+                    <div class="form-check">
+                        <?php
+                        foreach ($allColumns as $column) {
+                            $checked = in_array($column, $visibleColumns) ? 'checked' : '';
+                            echo "<div class='form-check'>
+                                    <input class='form-check-input' type='checkbox' name='visible_columns[]' value='$column' id='$column' $checked>
+                                    <label class='form-check-label' for='$column'>$column</label>
+                                  </div>";
+                        }
+                        ?>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <button type="button" onclick="window.location.href='activeBookings.php'" class="btn btn-outline-secondary">Reset</button>
                 </form>
-                <!-- Dashboard content goes here -->
-                <div class="container mt-4">
-                    <div class="row">
-                        <?php while ($row = $result->fetch_assoc()) : ?>
-                            <div class="col-lg-4 col-md-6 mb-4">
-                                <div class="card active-booking-card">
-                                    <div class="card-body">
-                                        <h5 class="card-title"><?= htmlspecialchars($row['Name']) ?: "Please Update" ?></h5>
-                                        <p class="card-text"><strong>Email: </strong> <?= htmlspecialchars($row['Email']) ?: "Please Update" ?></p>
-                                        <p class="card-text"><strong>Phone: </strong> <?= htmlspecialchars($row['Phone']) ?: "Please Update" ?></p>
-                                        <p class="card-text"><strong>Bedrooms: </strong> <?= htmlspecialchars($row['Bedrooms']) ?: "Please Update" ?></p>
-                                        <p class="card-text"><strong>Booking Date: </strong> <?= htmlspecialchars($row['BookingDate']) ?: "Please Update" ?></p>
-                                        <p class="card-text"><strong>Moving Date: </strong> <?= htmlspecialchars($row['MovingDate']) ?: "Please Update" ?></p>
-                                        <p class="card-text"><strong>Pickup Location: </strong> <?= htmlspecialchars($row['PickupLocation']) ?: "Please Update" ?></p>
-                                        <p class="card-text"><strong>Dropoff Location: </strong> <?= htmlspecialchars($row['DropoffLocation']) ?: "Please Update" ?></p>
-                                        <!-- Cancel booking button -->
-                                        <button class="btn btn btn-outline-danger btn-sm cancel-booking" data-bookingid="<?= $row['BookingID'] ?>">Cancel</button>
-                                        <!-- Modal trigger button -->
-                                        <i class="fa fa-arrows-alt" aria-hidden="true" data-toggle="modal" data-target="#modal<?= $row['BookingID'] ?>" style="cursor:pointer; float:right;"></i>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <!-- Modal -->
-                            <div class="modal fade" id="modal<?= $row['BookingID'] ?>" data-bookingid="<?= $row['BookingID'] ?>" tabindex="-1" aria-labelledby="modalLabel<?= $row['BookingID'] ?>" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="modalLabel<?= $row['BookingID'] ?>">Booking Details for <strong><?= htmlspecialchars($row['Name']) ?></strong></h5>
-                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                <span aria-hidden="true">&times;</span>
-                                            </button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <!-- All details here -->
-                                            <p><strong>Name: </strong> <?= htmlspecialchars($row['Name']) ?></p>
-                                            <div class="editableField">
-                                                <strong>Email: </strong>
-                                                <span><?= htmlspecialchars($row['Email']) ?></span>
-                                                <input type="text" class="editInput" name="Email" value="<?= htmlspecialchars($row['Email']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                            <div class="editableField">
-                                                <strong>Phone: </strong>
-                                                <span><?= htmlspecialchars($row['Phone']) ?></span>
-                                                <input type="text" class="editInput" name="Phone" value="<?= htmlspecialchars($row['Phone']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                            <div class="editableField">
-                                                <strong>Bedrooms: </strong>
-                                                <span><?= htmlspecialchars($row['Bedrooms']) ?></span>
-                                                <input type="text" class="editInput" name="Bedrooms" value="<?= htmlspecialchars($row['Bedrooms']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                            <div class="editableField">
-                                                <strong>Booking Date: </strong>
-                                                <span><?= htmlspecialchars($row['BookingDate']) ?></span>
-                                                <input type="text" class="editInput" name="BookingDate" value="<?= htmlspecialchars($row['BookingDate']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                            <div class="editableField">
-                                                <strong>Moving Date: </strong>
-                                                <span><?= htmlspecialchars($row['MovingDate']) ?></span>
-                                                <input type="date" class="editInput" name="MovingDate" value="<?= htmlspecialchars($row['MovingDate']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                            <div class="editableField">
-                                                <strong>Pickup Location: </strong>
-                                                <span><?= htmlspecialchars($row['PickupLocation']) ?></span>
-                                                <input type="text" class="editInput" name="PickupLocation" value="<?= htmlspecialchars($row['PickupLocation']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                            <div class="editableField">
-                                                <strong>Dropoff Location: </strong>
-                                                <span><?= htmlspecialchars($row['DropoffLocation']) ?></span>
-                                                <input type="text" class="editInput" name="DropoffLocation" value="<?= htmlspecialchars($row['DropoffLocation']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                            <div class="editableField">
-                                                <strong>Truck Size: </strong>
-                                                <span><?= htmlspecialchars($row['TruckSize']) ?: "Please Update" ?></span>
-                                                <input type="text" class="editInput" name="TruckSize" value="<?= htmlspecialchars($row['TruckSize']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                            <div class="editableField">
-                                                <strong>Callout Fee: </strong>
-                                                <span><?= htmlspecialchars($row['CalloutFee']) ?: "Please Update" ?></span>
-                                                <input type="text" class="editInput" name="CalloutFee" value="<?= htmlspecialchars($row['CalloutFee']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                            <div class="editableField">
-                                                <strong>Rate: </strong>
-                                                <span><?= htmlspecialchars($row['Rate']) ?: "Please Update" ?></span>
-                                                <input type="text" class="editInput" name="Rate" value="<?= htmlspecialchars($row['Rate']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                            <div class="editableField">
-                                                <strong>Deposit: </strong>
-                                                <span><?= htmlspecialchars($row['Deposit']) ?: "Please Update" ?></span>
-                                                <input type="text" class="editInput" name="Deposit" value="<?= htmlspecialchars($row['Deposit']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                            <div class="editableField">
-                                                <strong>Time Slot: </strong>
-                                                <span><?= htmlspecialchars($row['TimeSlot']) ?: "Please Update" ?></span>
-                                                <input type="time" class="editInput" name="TimeSlot" value="<?= htmlspecialchars($row['TimeSlot']) ?>" style="display:none;">
-                                                <i class="fa fa-pencil-square-o edit" aria-hidden="true"></i>
-                                                <!-- Save and Cancel buttons -->
-                                                <button type="button" class="saveEdit btn btn-success btn-sm" style="display:none;">Save</button>
-                                                <button type="button" class="cancelEdit btn btn-danger btn-sm" style="display:none;">Cancel</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endwhile; ?>
-                    </div>
-
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <?php if (in_array('Name', $visibleColumns)) : ?><th class="sortable" data-sort="Name">Name</th><?php endif; ?>
+                                <?php if (in_array('Email', $visibleColumns)) : ?><th class="sortable" data-sort="Email">Email</th><?php endif; ?>
+                                <?php if (in_array('Phone', $visibleColumns)) : ?><th class="sortable" data-sort="Phone">Phone</th><?php endif; ?>
+                                <?php if (in_array('Bedrooms', $visibleColumns)) : ?><th class="sortable" data-sort="Bedrooms">Bedrooms</th><?php endif; ?>
+                                <?php if (in_array('BookingDate', $visibleColumns)) : ?><th class="sortable" data-sort="BookingDate">Booking Date</th><?php endif; ?>
+                                <?php if (in_array('MovingDate', $visibleColumns)) : ?><th class="sortable" data-sort="MovingDate">Moving Date</th><?php endif; ?>
+                                <?php if (in_array('PickupLocation', $visibleColumns)) : ?><th class="sortable" data-sort="PickupLocation">Pickup Location</th><?php endif; ?>
+                                <?php if (in_array('DropoffLocation', $visibleColumns)) : ?><th class="sortable" data-sort="DropoffLocation">Dropoff Location</th><?php endif; ?>
+                                <?php if (in_array('TruckSize', $visibleColumns)) : ?><th class="sortable" data-sort="TruckSize">Truck Size</th><?php endif; ?>
+                                <?php if (in_array('CalloutFee', $visibleColumns)) : ?><th class="sortable" data-sort="CalloutFee">Callout Fee</th><?php endif; ?>
+                                <?php if (in_array('Rate', $visibleColumns)) : ?><th class="sortable" data-sort="Rate">Rate</th><?php endif; ?>
+                                <?php if (in_array('Deposit', $visibleColumns)) : ?><th class="sortable" data-sort="Deposit">Deposit</th><?php endif; ?>
+                                <?php if (in_array('TimeSlot', $visibleColumns)) : ?><th class="sortable" data-sort="TimeSlot">Time Slot</th><?php endif; ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($row = $result->fetch_assoc()) : ?>
+                                <tr>
+                                    <?php if (in_array('Name', $visibleColumns)) : ?><td class="editable" data-field="Name" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Name']) ?></td><?php endif; ?>
+                                    <?php if (in_array('Email', $visibleColumns)) : ?><td class="editable" data-field="Email" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Email']) ?></td><?php endif; ?>
+                                    <?php if (in_array('Phone', $visibleColumns)) : ?><td class="editable" data-field="Phone" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Phone']) ?></td><?php endif; ?>
+                                    <?php if (in_array('Bedrooms', $visibleColumns)) : ?><td class="editable" data-field="Bedrooms" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Bedrooms']) ?></td><?php endif; ?>
+                                    <?php if (in_array('BookingDate', $visibleColumns)) : ?>
+                                        <td class="editable-date" data-field="BookingDate" data-id="<?= $row['BookingID'] ?>">
+                                            <input type="date" class="form-control" value="<?= htmlspecialchars($row['BookingDate']) ?>" readonly>
+                                        </td>
+                                    <?php endif; ?>
+                                    <?php if (in_array('MovingDate', $visibleColumns)) : ?>
+                                        <td class="editable-date" data-field="MovingDate" data-id="<?= $row['BookingID'] ?>">
+                                            <input type="date" class="form-control" value="<?= htmlspecialchars($row['MovingDate']) ?>" readonly>
+                                        </td>
+                                    <?php endif; ?>
+                                    <?php if (in_array('PickupLocation', $visibleColumns)) : ?><td class="editable" data-field="PickupLocation" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['PickupLocation']) ?></td><?php endif; ?>
+                                    <?php if (in_array('DropoffLocation', $visibleColumns)) : ?><td class="editable" data-field="DropoffLocation" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['DropoffLocation']) ?></td><?php endif; ?>
+                                    <?php if (in_array('TruckSize', $visibleColumns)) : ?><td class="editable" data-field="TruckSize" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['TruckSize']) ?></td><?php endif; ?>
+                                    <?php if (in_array('CalloutFee', $visibleColumns)) : ?><td class="editable" data-field="CalloutFee" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['CalloutFee']) ?></td><?php endif; ?>
+                                    <?php if (in_array('Rate', $visibleColumns)) : ?><td class="editable" data-field="Rate" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Rate']) ?></td><?php endif; ?>
+                                    <?php if (in_array('Deposit', $visibleColumns)) : ?><td class="editable" data-field="Deposit" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Deposit']) ?></td><?php endif; ?>
+                                    <?php if (in_array('TimeSlot', $visibleColumns)) : ?>
+                                        <td class="editable-time" data-field="TimeSlot" data-id="<?= $row['BookingID'] ?>">
+                                            <input type="time" class="form-control" value="<?= htmlspecialchars($row['TimeSlot']) ?>" readonly>
+                                        </td>
+                                    <?php endif; ?>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Bootstrap JS, Popper.js, and jQuery -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-        // Close the modal when clicking outside of it
-        $(document).on('click', '[data-dismiss="modal"]', function(e) {
-            if ($(e.target).hasClass('modal')) {
-                $(e.target).modal('hide');
-            }
+        $(document).ready(function() {
+            // Make table cells editable
+            $('.editable').on('dblclick', function() {
+                var $td = $(this);
+                var originalValue = $td.text();
+                var field = $td.data('field');
+                var bookingId = $td.data('id');
+
+                var $input = $('<input>', {
+                    type: 'text',
+                    value: originalValue,
+                    blur: function() {
+                        var newValue = $input.val();
+                        $td.text(newValue);
+
+                        // Update the database with the new value
+                        $.ajax({
+                            url: 'update_booking.php',
+                            method: 'POST',
+                            data: {
+                                booking_id: bookingId,
+                                field: field,
+                                value: newValue
+                            },
+                            success: function(response) {
+                                console.log(response);
+                            },
+                            error: function(xhr, status, error) {
+                                console.error(xhr.responseText);
+                            }
+                        });
+                    },
+                    keyup: function(e) {
+                        if (e.which === 13) {
+                            $input.blur();
+                        }
+                    }
+                }).appendTo($td.empty()).focus();
+            });
+
+            // Make date fields editable
+            $('.editable-date').on('dblclick', function() {
+                var $td = $(this);
+                var $input = $td.find('input');
+                $input.prop('readonly', false).focus();
+
+                $input.on('blur', function() {
+                    var newValue = $input.val();
+                    $input.prop('readonly', true);
+
+                    var field = $td.data('field');
+                    var bookingId = $td.data('id');
+
+                    // Update the database with the new value
+                    $.ajax({
+                        url: 'update_booking.php',
+                        method: 'POST',
+                        data: {
+                            booking_id: bookingId,
+                            field: field,
+                            value: newValue
+                        },
+                        success: function(response) {
+                            console.log(response);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error(xhr.responseText);
+                        }
+                    });
+                });
+
+                $input.on('keyup', function(e) {
+                    if (e.which === 13) { // Enter key
+                        $input.blur();
+                    }
+                });
+            });
+
+            // Make time fields editable
+            $('.editable-time').on('dblclick', function() {
+                var $td = $(this);
+                var $input = $td.find('input');
+                $input.prop('readonly', false).focus();
+
+                $input.on('blur', function() {
+                    var newValue = $input.val();
+                    $input.prop('readonly', true);
+
+                    var field = $td.data('field');
+                    var bookingId = $td.data('id');
+
+                    // Update the database with the new value
+                    $.ajax({
+                        url: 'update_booking.php',
+                        method: 'POST',
+                        data: {
+                            booking_id: bookingId,
+                            field: field,
+                            value: newValue
+                        },
+                        success: function(response) {
+                            console.log(response);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error(xhr.responseText);
+                        }
+                    });
+                });
+
+                $input.on('keyup', function(e) {
+                    if (e.which === 13) { // Enter key
+                        $input.blur();
+                    }
+                });
+            });
+
+            // Handle sorting
+            $('.sortable').on('click', function() {
+                var column = $(this).data('sort');
+                var currentUrl = window.location.href.split('?')[0];
+                var newUrl = currentUrl + '?sort=' + column + '&order=' + ('<?= $sortOrder ?>' === 'asc' ? 'desc' : 'asc') +
+                    '&search=' + encodeURIComponent('<?= $searchTerm ?>') +
+                    '&date_filter=' + encodeURIComponent('<?= $dateFilter ?>') +
+                    '&start_date=' + encodeURIComponent('<?= $startDate ?>') +
+                    '&end_date=' + encodeURIComponent('<?= $endDate ?>') +
+                    '&visible_columns=' + encodeURIComponent('<?= implode(',', $visibleColumns) ?>') +
+                    '&sort_column=' + encodeURIComponent('<?= $sortColumn ?>');
+                window.location.href = newUrl;
+            });
+
+            // Date filter logic
+            $('#date_filter').on('change', function() {
+                var filter = $(this).val();
+                if (filter === 'date_range') {
+                    $('#start_date, #end_date').show();
+                } else {
+                    $('#start_date, #end_date').hide();
+                }
+            }).trigger('change');
+
+            // Select All and Deselect All functionality
+            $('#select_all').on('click', function() {
+                $('.form-check-input').prop('checked', true);
+            });
+
+            $('#deselect_all').on('click', function() {
+                $('.form-check-input').prop('checked', false);
+            });
         });
     </script>
-
-    <script src="updateBookingModal.js"></script>
-
-
 </body>
 
 </html>
