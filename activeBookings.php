@@ -158,16 +158,23 @@ $result = $conn->query($query);
                         <button type="button" id="select_all" class="btn btn-outline-secondary btn-sm">Select All</button>
                         <button type="button" id="deselect_all" class="btn btn-outline-secondary btn-sm">Deselect All</button>
                     </div>
-                    <div class="form-check">
-                        <?php
-                        foreach ($allColumns as $column) {
-                            $checked = in_array($column, $visibleColumns) ? 'checked' : '';
-                            echo "<div class='form-check'>
-                                    <input class='form-check-input' type='checkbox' name='visible_columns[]' value='$column' id='$column' $checked>
-                                    <label class='form-check-label' for='$column'>$column</label>
-                                  </div>";
-                        }
-                        ?>
+                    <p>
+                        <a class="btn btn-secondary" data-toggle="collapse" href="#collapseColumnSelector" role="button" aria-expanded="false" aria-controls="collapseColumnSelector">
+                            Show/Hide Columns
+                        </a>
+                    </p>
+                    <div class="collapse" id="collapseColumnSelector">
+                        <div class="form-check">
+                            <?php
+                            foreach ($allColumns as $column) {
+                                $checked = in_array($column, $visibleColumns) ? 'checked' : '';
+                                echo "<div class='form-check'>
+                                        <input class='form-check-input' type='checkbox' name='visible_columns[]' value='$column' id='$column' $checked>
+                                        <label class='form-check-label' for='$column'>$column</label>
+                                      </div>";
+                            }
+                            ?>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary">Filter</button>
                     <button type="button" onclick="window.location.href='activeBookings.php'" class="btn btn-outline-secondary">Reset</button>
@@ -189,7 +196,9 @@ $result = $conn->query($query);
                                 <?php if (in_array('CalloutFee', $visibleColumns)) : ?><th class="sortable" data-sort="CalloutFee">Callout Fee</th><?php endif; ?>
                                 <?php if (in_array('Rate', $visibleColumns)) : ?><th class="sortable" data-sort="Rate">Rate</th><?php endif; ?>
                                 <?php if (in_array('Deposit', $visibleColumns)) : ?><th class="sortable" data-sort="Deposit">Deposit</th><?php endif; ?>
+                                <?php if (in_array('TimeSlot', $visibleColumns)) : ?>
                                 <?php if (in_array('TimeSlot', $visibleColumns)) : ?><th class="sortable" data-sort="TimeSlot">Time Slot</th><?php endif; ?>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
