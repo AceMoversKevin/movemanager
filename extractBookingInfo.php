@@ -23,13 +23,10 @@ function extractCalloutFee($text)
     return null;
 }
 
-function extractTruckSize($text, $rate)
+function extractTruckSize($text)
 {
     if (preg_match('/(\d+)\s*ton\s*truck/i', $text, $matches)) {
         return $matches[1];
-    }
-    if ($rate < 150) {
-        return 5;
     }
     return null;
 }
@@ -41,9 +38,12 @@ $rows = [];
 while ($row = $result->fetch_assoc()) {
     $rate = extractRate($row['AdditionalDetails']);
     $calloutFee = extractCalloutFee($row['AdditionalDetails']);
-    $truckSize = extractTruckSize($row['AdditionalDetails'], $rate);
+    $truckSize = extractTruckSize($row['AdditionalDetails']);
 
     if ($rate || $calloutFee || $truckSize) {
+        if (!$truckSize && $rate && $rate < 150) {
+            $truckSize = 5;
+        }
         $rows[] = [
             'BookingID' => $row['BookingID'],
             'AdditionalDetails' => $row['AdditionalDetails'],

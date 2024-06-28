@@ -197,6 +197,9 @@ $result = $conn->query($query);
                     </div>
                     <button type="submit" class="btn btn-primary">Filter</button>
                     <button type="button" onclick="window.location.href='leadManagement.php'" class="btn btn-outline-secondary">Reset</button>
+                    <!-- Button to parse raw leads -->
+                    <a href="parseRawLeads.php" class="btn btn-secondary">View Raw Leads</a>
+
                 </form>
 
                 <div class="table-responsive">
