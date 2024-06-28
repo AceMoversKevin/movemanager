@@ -19,7 +19,7 @@
                                     <a class="nav-link" href="cancelledBookings.php">Canceled Bookings</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">Create Booking</a>
+                                    <a class="nav-link" href="createBooking.php">Create Booking</a>
                                 </li>
                             </ul>
                         </li>
