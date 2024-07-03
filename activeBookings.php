@@ -187,7 +187,6 @@ $result = $conn->query($query);
                     </div>
                     <button type="submit" class="btn btn-primary">Filter</button>
                     <button type="button" onclick="window.location.href='activeBookings.php'" class="btn btn-outline-secondary">Reset</button>
-                    <a href="extractBookingInfo.php" class="btn btn-secondary">Extract Booking Info</a>
                 </form>
 
                 <div class="table-responsive">

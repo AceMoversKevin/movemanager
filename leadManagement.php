@@ -9,8 +9,8 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
 }
 
 // Fetch sorting criteria from the query parameters
-$sortColumn = isset($_GET['sort']) ? $_GET['sort'] : 'lead_date';
-$sortOrder = isset($_GET['order']) && $_GET['order'] === 'desc' ? 'desc' : 'asc';
+$sortColumn = isset($_GET['sort']) ? $_GET['sort'] : 'lead_id';
+$sortOrder = isset($_GET['order']) ? $_GET['order'] : 'desc';
 
 // Handle search term and date filter
 $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
