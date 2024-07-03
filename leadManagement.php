@@ -80,6 +80,23 @@ if ($dateFilter) {
 $query .= " ORDER BY $sortColumn $sortOrder";
 
 $result = $conn->query($query);
+
+// Fetch the last assigned person and count the leads in the current cycle
+$lastAssignedPersonQuery = "SELECT AssignedTo FROM leads ORDER BY lead_id DESC LIMIT 1";
+$lastAssignedPersonResult = $conn->query($lastAssignedPersonQuery);
+$lastAssignedPersonRow = $lastAssignedPersonResult->fetch_assoc();
+$lastAssignedPerson = $lastAssignedPersonRow['AssignedTo'];
+
+$cycleCount = 0;
+$leadsCycleQuery = "SELECT AssignedTo FROM leads ORDER BY lead_id DESC";
+$leadsCycleResult = $conn->query($leadsCycleQuery);
+while ($leadsCycleRow = $leadsCycleResult->fetch_assoc()) {
+    if ($leadsCycleRow['AssignedTo'] == $lastAssignedPerson) {
+        $cycleCount++;
+    } else {
+        break;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -199,7 +216,12 @@ $result = $conn->query($query);
                     <button type="button" onclick="window.location.href='leadManagement.php'" class="btn btn-outline-secondary">Reset</button>
                     <!-- Button to parse raw leads -->
                     <a href="parseRawLeads.php" class="btn btn-secondary">View Raw Leads</a>
-
+                    <!-- Display the last assigned person and cycle count -->
+                    <div class="mt-2">
+                        <strong>Last assigned to:</strong> <?= htmlspecialchars($lastAssignedPerson) ?>
+                        <br>
+                        <strong>Leads this cycle:</strong> <?= $cycleCount ?>
+                    </div>
                 </form>
 
                 <div class="table-responsive">
