@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
 }
 
 // Fetch sorting criteria from the query parameters
-$sortColumn = isset($_GET['sort_column']) ? $_GET['sort_column'] : 'MovingDate';
+$sortColumn = isset($_GET['sort_column']) ? $_GET['sort_column'] : 'BookingID';
 $sortOrder = isset($_GET['sort_order']) && $_GET['sort_order'] === 'desc' ? 'desc' : 'asc';
 
 // Handle search term and date filter
@@ -187,6 +187,7 @@ $result = $conn->query($query);
                     </div>
                     <button type="submit" class="btn btn-primary">Filter</button>
                     <button type="button" onclick="window.location.href='activeBookings.php'" class="btn btn-outline-secondary">Reset</button>
+                    <a href="extractBookingInfo.php" class="btn btn-secondary">Extract Booking Info</a>
                 </form>
 
                 <div class="table-responsive">
