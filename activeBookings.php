@@ -209,6 +209,7 @@ $result = $conn->query($query);
                     <table class="table table-bordered table-hover">
                         <thead>
                             <tr>
+                                <th></th> <!-- New column for the button -->
                                 <?php if (in_array('Name', $visibleColumns)) : ?><th class="sortable" data-sort="Name">Name</th><?php endif; ?>
                                 <?php if (in_array('Email', $visibleColumns)) : ?><th class="sortable" data-sort="Email">Email</th><?php endif; ?>
                                 <?php if (in_array('Phone', $visibleColumns)) : ?><th class="sortable" data-sort="Phone">Phone</th><?php endif; ?>
@@ -228,6 +229,9 @@ $result = $conn->query($query);
                         <tbody>
                             <?php while ($row = $result->fetch_assoc()) : ?>
                                 <tr>
+                                    <td>
+                                        <a href="bookingsConnections.php?booking_id=<?= $row['BookingID'] ?>" class="btn btn-primary btn-sm">Check Connection</a>
+                                    </td>
                                     <?php if (in_array('Name', $visibleColumns)) : ?><td class="editable" data-field="Name" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Name']) ?></td><?php endif; ?>
                                     <?php if (in_array('Email', $visibleColumns)) : ?><td class="editable" data-field="Email" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Email']) ?></td><?php endif; ?>
                                     <?php if (in_array('Phone', $visibleColumns)) : ?><td class="editable" data-field="Phone" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Phone']) ?></td><?php endif; ?>
