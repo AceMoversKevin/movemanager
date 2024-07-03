@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
 
 // Fetch sorting criteria from the query parameters
 $sortColumn = isset($_GET['sort_column']) ? $_GET['sort_column'] : 'BookingID';
-$sortOrder = isset($_GET['sort_order']) && $_GET['sort_order'] === 'desc' ? 'desc' : 'asc';
+$sortOrder = isset($_GET['sort_order']) && $_GET['sort_order'] === 'asc' ? 'asc' : 'desc';
 
 // Handle search term and date filter
 $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
@@ -174,6 +174,7 @@ $result = $conn->query($query);
                     <select name="sort_column" id="sort_column" class="form-control" style="display:inline-block; width: auto;">
                         <option value="MovingDate" <?= $sortColumn == 'MovingDate' ? 'selected' : '' ?>>Sort by Moving Date</option>
                         <option value="BookingDate" <?= $sortColumn == 'BookingDate' ? 'selected' : '' ?>>Sort by Booking Date</option>
+                        <option value="BookingID" <?= $sortColumn == 'BookingID' ? 'selected' : '' ?>>Sort by Booking ID</option>
                     </select>
                     <input type="date" name="start_date" id="start_date" class="form-control" style="display:inline-block; width: auto;">
                     <input type="date" name="end_date" id="end_date" class="form-control" style="display:inline-block; width: auto;">
