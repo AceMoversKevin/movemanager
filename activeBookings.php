@@ -118,6 +118,20 @@ $result = $conn->query($query);
         .table td {
             white-space: nowrap;
         }
+
+        .details-short {
+            display: inline;
+        }
+
+        .details-full {
+            display: none;
+        }
+
+        .read-more,
+        .read-less {
+            cursor: pointer;
+            color: blue;
+        }
     </style>
 </head>
 
@@ -238,7 +252,14 @@ $result = $conn->query($query);
                                             <input type="time" class="form-control" value="<?= htmlspecialchars($row['TimeSlot']) ?>" readonly>
                                         </td>
                                     <?php endif; ?>
-                                    <?php if (in_array('AdditionalDetails', $visibleColumns)) : ?><td class="editable" data-field="AdditionalDetails" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['AdditionalDetails']) ?></td><?php endif; ?>
+                                    <?php if (in_array('AdditionalDetails', $visibleColumns)) : ?>
+                                        <td class="editable" data-field="AdditionalDetails" data-id="<?= $row['BookingID'] ?>">
+                                            <span class="details-short"><?= htmlspecialchars(substr($row['AdditionalDetails'], 0, 100)) ?></span>
+                                            <span class="details-full"><?= htmlspecialchars($row['AdditionalDetails']) ?></span>
+                                            <span class="read-more">Read More</span>
+                                            <span class="read-less">Read Less</span>
+                                        </td>
+                                    <?php endif; ?>
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>
@@ -396,6 +417,28 @@ $result = $conn->query($query);
 
             $('#deselect_all').on('click', function() {
                 $('.form-check-input').prop('checked', false);
+            });
+
+            // Handle read more/read less functionality
+            $('.read-more').on('click', function() {
+                $(this).siblings('.details-full').show();
+                $(this).siblings('.details-short').hide();
+                $(this).hide();
+                $(this).siblings('.read-less').show();
+            });
+
+            $('.read-less').on('click', function() {
+                $(this).siblings('.details-full').hide();
+                $(this).siblings('.details-short').show();
+                $(this).hide();
+                $(this).siblings('.read-more').show();
+            });
+
+            // Initialize the read more/read less functionality
+            $('td[data-field="AdditionalDetails"]').each(function() {
+                if ($(this).find('.details-full').text().length <= 100) {
+                    $(this).find('.read-more, .read-less').hide();
+                }
             });
         });
     </script>
