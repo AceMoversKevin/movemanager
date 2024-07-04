@@ -127,8 +127,7 @@ $result = $conn->query($query);
             display: none;
         }
 
-        .read-more,
-        .read-less {
+        .read-more, .read-less {
             cursor: pointer;
             color: blue;
         }
