@@ -127,7 +127,8 @@ $result = $conn->query($query);
             display: none;
         }
 
-        .read-more, .read-less {
+        .read-more,
+        .read-less {
             cursor: pointer;
             color: blue;
         }
@@ -157,26 +158,26 @@ $result = $conn->query($query);
                     <input type="text" name="search" value="<?php echo htmlspecialchars($searchTerm); ?>" placeholder="Search Bookings" class="form-control" style="display:inline-block; width: auto;">
                     <select name="date_filter" id="date_filter" class="form-control" style="display:inline-block; width: auto;">
                         <option value="">Select Date Filter</option>
-                        <option value="today">Today</option>
-                        <option value="next_day">Next Day</option>
-                        <option value="next_2_days">Next 2 Days</option>
-                        <option value="next_3_days">Next 3 Days</option>
-                        <option value="next_week">Next Week</option>
-                        <option value="next_month">Next Month</option>
-                        <option value="next_year">Next Year</option>
-                        <option value="current_month">Current Month</option>
-                        <option value="last_month">Last Month</option>
-                        <option value="current_year">Current Year</option>
-                        <option value="last_year">Last Year</option>
-                        <option value="date_range">Date Range</option>
+                        <option value="today" <?= $dateFilter == 'today' ? 'selected' : '' ?>>Today</option>
+                        <option value="next_day" <?= $dateFilter == 'next_day' ? 'selected' : '' ?>>Next Day</option>
+                        <option value="next_2_days" <?= $dateFilter == 'next_2_days' ? 'selected' : '' ?>>Next 2 Days</option>
+                        <option value="next_3_days" <?= $dateFilter == 'next_3_days' ? 'selected' : '' ?>>Next 3 Days</option>
+                        <option value="next_week" <?= $dateFilter == 'next_week' ? 'selected' : '' ?>>Next Week</option>
+                        <option value="next_month" <?= $dateFilter == 'next_month' ? 'selected' : '' ?>>Next Month</option>
+                        <option value="next_year" <?= $dateFilter == 'next_year' ? 'selected' : '' ?>>Next Year</option>
+                        <option value="current_month" <?= $dateFilter == 'current_month' ? 'selected' : '' ?>>Current Month</option>
+                        <option value="last_month" <?= $dateFilter == 'last_month' ? 'selected' : '' ?>>Last Month</option>
+                        <option value="current_year" <?= $dateFilter == 'current_year' ? 'selected' : '' ?>>Current Year</option>
+                        <option value="last_year" <?= $dateFilter == 'last_year' ? 'selected' : '' ?>>Last Year</option>
+                        <option value="date_range" <?= $dateFilter == 'date_range' ? 'selected' : '' ?>>Date Range</option>
                     </select>
                     <select name="sort_column" id="sort_column" class="form-control" style="display:inline-block; width: auto;">
                         <option value="MovingDate" <?= $sortColumn == 'MovingDate' ? 'selected' : '' ?>>Sort by Moving Date</option>
                         <option value="BookingDate" <?= $sortColumn == 'BookingDate' ? 'selected' : '' ?>>Sort by Booking Date</option>
                         <option value="BookingID" <?= $sortColumn == 'BookingID' ? 'selected' : '' ?>>Sort by Booking ID</option>
                     </select>
-                    <input type="date" name="start_date" id="start_date" class="form-control" style="display:inline-block; width: auto;">
-                    <input type="date" name="end_date" id="end_date" class="form-control" style="display:inline-block; width: auto;">
+                    <input type="date" name="start_date" id="start_date" value="<?= htmlspecialchars($startDate) ?>" class="form-control" style="display:inline-block; width: auto;">
+                    <input type="date" name="end_date" id="end_date" value="<?= htmlspecialchars($endDate) ?>" class="form-control" style="display:inline-block; width: auto;">
                     <div class="mb-2">
                         <button type="button" id="select_all" class="btn btn-outline-secondary btn-sm">Select All</button>
                         <button type="button" id="deselect_all" class="btn btn-outline-secondary btn-sm">Deselect All</button>
@@ -192,17 +193,18 @@ $result = $conn->query($query);
                             foreach ($allColumns as $column) {
                                 $checked = in_array($column, $visibleColumns) ? 'checked' : '';
                                 echo "<div class='form-check'>
-                                        <input class='form-check-input' type='checkbox' name='visible_columns[]' value='$column' id='$column' $checked>
-                                        <label class='form-check-label' for='$column'>$column</label>
-                                      </div>";
+                        <input class='form-check-input' type='checkbox' name='visible_columns[]' value='$column' id='$column' $checked>
+                        <label class='form-check-label' for='$column'>$column</label>
+                      </div>";
                             }
                             ?>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary">Filter</button>
                     <button type="button" onclick="window.location.href='activeBookings.php'" class="btn btn-outline-secondary">Reset</button>
-                    <a href="extractBookingInfo.php" class="btn btn-secondary">Extract Booking Info</a>
+                    <a href="extractBookingInfo.php?sort_column=<?= htmlspecialchars($sortColumn) ?>&sort_order=<?= htmlspecialchars($sortOrder) ?>&search=<?= htmlspecialchars($searchTerm) ?>&date_filter=<?= htmlspecialchars($dateFilter) ?>&start_date=<?= htmlspecialchars($startDate) ?>&end_date=<?= htmlspecialchars($endDate) ?>" class="btn btn-secondary">Extract Booking Info</a>
                 </form>
+
 
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover">
