@@ -6,7 +6,35 @@ function parseEmailBody($emailBody, $teamMember)
 {
     $parsedData = [];
 
-    if ($teamMember === 'MovingSelect') {
+    if ($teamMember === 'FindAMover') {
+        // Parse FindAMover email body
+        if (preg_match('/<strong>Customer:<\/strong>\s*(.*?)<br>/', $emailBody, $matches)) {
+            $parsedData['lead_name'] = trim($matches[1]);
+        }
+
+        if (preg_match('/<strong>Phone:<\/strong>\s*(.*?)<br>/', $emailBody, $matches)) {
+            $parsedData['phone'] = trim($matches[1]);
+        }
+
+        if (preg_match('/<strong>Email:<\/strong>\s*<a href="mailto:(.*?)">/', $emailBody, $matches)) {
+            $parsedData['email'] = trim($matches[1]);
+        }
+
+        if (preg_match('/<td\s*valign="top">\s*<strong>Pick-up<\/strong>\s*<\/td>\s*<td>\s*<div>\s*(.*?)\s*<\/div>/s', $emailBody, $matches)) {
+            $parsedData['pickup'] = trim($matches[1]);
+        }
+
+        if (preg_match('/<td\s*valign="top">\s*<strong>Drop-off:<\/strong>\s*<\/td>\s*<td>\s*<div>\s*(.*?)\s*<\/div>/s', $emailBody, $matches)) {
+            $parsedData['dropoff'] = trim($matches[1]);
+        }
+
+        if (preg_match('/<strong>Requested Date:<\/strong>\s*<\/td>\s*<td>\s*(.*?)\s*<\/td>/s', $emailBody, $matches)) {
+            $parsedData['lead_date'] = date('Y-m-d', strtotime(trim($matches[1])));
+        }
+
+        $parsedData['Source'] = 'FindAMover';
+        $parsedData['AssignedTo'] = 'Admin';
+    } elseif ($teamMember === 'MovingSelect') {
         // Parse MovingSelect email body
         if (preg_match('/Name<\/td>.*?<td.*?><span.*?>(.*?)<\/span>/', $emailBody, $matches)) {
             $parsedData['lead_name'] = trim($matches[1]);
