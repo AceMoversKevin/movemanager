@@ -31,7 +31,71 @@ function extractTruckSize($text)
     return null;
 }
 
-$query = "SELECT BookingID, AdditionalDetails, Rate, CalloutFee, TruckSize FROM Bookings WHERE isActive = 1";
+// Fetch filter parameters from the query parameters
+$sortColumn = isset($_GET['sort_column']) ? $_GET['sort_column'] : 'BookingID';
+$sortOrder = isset($_GET['sort_order']) && $_GET['sort_order'] === 'asc' ? 'asc' : 'desc';
+$searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
+$dateFilter = isset($_GET['date_filter']) ? $_GET['date_filter'] : '';
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : '';
+$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
+
+// Construct the query with filters
+$query = "SELECT BookingID, Name, Email, AdditionalDetails, Rate, CalloutFee, TruckSize FROM Bookings WHERE isActive = 1 AND (TruckSize IS NULL OR CalloutFee IS NULL OR Rate IS NULL)";
+
+// Add search term filtering
+if ($searchTerm) {
+    $query .= " AND (Name LIKE '%$searchTerm%' OR Email LIKE '%$searchTerm%' OR AdditionalDetails LIKE '%$searchTerm%')";
+}
+
+// Add date filter
+if ($dateFilter) {
+    switch ($dateFilter) {
+        case 'today':
+            $query .= " AND DATE(MovingDate) = CURDATE()";
+            break;
+        case 'next_day':
+            $query .= " AND DATE(MovingDate) = CURDATE() + INTERVAL 1 DAY";
+            break;
+        case 'next_2_days':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 2 DAY";
+            break;
+        case 'next_3_days':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 3 DAY";
+            break;
+        case 'next_week':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 WEEK";
+            break;
+        case 'next_month':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 MONTH";
+            break;
+        case 'next_year':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 YEAR";
+            break;
+        case 'current_month':
+            $query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE()) AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
+            break;
+        case 'last_month':
+            $query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)";
+            break;
+        case 'current_year':
+            $query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
+            break;
+        case 'last_year':
+            $query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 YEAR)";
+            break;
+        case 'date_range':
+            if ($startDate && $endDate) {
+                $query .= " AND MovingDate BETWEEN '$startDate' AND '$endDate'";
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+// Add sorting criteria to the query
+$query .= " ORDER BY $sortColumn $sortOrder";
+
 $result = $conn->query($query);
 $rows = [];
 
@@ -46,6 +110,8 @@ while ($row = $result->fetch_assoc()) {
         }
         $rows[] = [
             'BookingID' => $row['BookingID'],
+            'Name' => $row['Name'],
+            'Email' => $row['Email'],
             'AdditionalDetails' => $row['AdditionalDetails'],
             'Rate' => $rate,
             'CalloutFee' => $calloutFee,
@@ -89,6 +155,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <thead>
                     <tr>
                         <th>Booking ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
                         <th>Additional Details</th>
                         <th>Extracted Rate</th>
                         <th>Extracted Callout Fee</th>
@@ -99,6 +167,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php foreach ($rows as $row) : ?>
                         <tr>
                             <td><?= htmlspecialchars($row['BookingID']) ?></td>
+                            <td><?= htmlspecialchars($row['Name']) ?></td>
+                            <td><?= htmlspecialchars($row['Email']) ?></td>
                             <td><?= htmlspecialchars($row['AdditionalDetails']) ?></td>
                             <td><input type="text" name="bookings[<?= $row['BookingID'] ?>][Rate]" value="<?= htmlspecialchars($row['Rate']) ?>" class="form-control"></td>
                             <td><input type="text" name="bookings[<?= $row['BookingID'] ?>][CalloutFee]" value="<?= htmlspecialchars($row['CalloutFee']) ?>" class="form-control"></td>
