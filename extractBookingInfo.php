@@ -11,13 +11,13 @@ function extractRate($text)
 
 function extractCalloutFee($text)
 {
-    if (preg_match('/(\d+)\s*(?:hour|hr|h|half)\s*call\s*out/i', $text, $matches)) {
+    if (preg_match('/(\d+(?:\.\d+)?)\s*(?:hour|hr|h|half)\s*(?:call\s*out|travel\s*charge|travel\s*charges)/i', $text, $matches)) {
         return $matches[1];
     }
-    if (preg_match('/(\d+)\s*min(?:ute)?s?\s*call\s*out/i', $text, $matches)) {
+    if (preg_match('/(\d+)\s*min(?:ute)?s?\s*(?:call\s*out|travel\s*charge|travel\s*charges)/i', $text, $matches)) {
         return $matches[1] / 60;
     }
-    if (stripos($text, 'half an hour call out') !== false || stripos($text, 'half hour call out') !== false || stripos($text, '0.5 hour call out') !== false) {
+    if (stripos($text, 'half an hour call out') !== false || stripos($text, 'half hour call out') !== false || stripos($text, '0.5 hour call out') !== false || stripos($text, 'half hr call out') !== false || stripos($text, 'half hour callout fee') !== false || stripos($text, 'half hour travel charges') !== false || stripos($text, 'half hour travel charge') !== false) {
         return 0.5;
     }
     return null;
@@ -25,7 +25,10 @@ function extractCalloutFee($text)
 
 function extractTruckSize($text)
 {
-    if (preg_match('/(\d+)\s*ton\s*truck/i', $text, $matches)) {
+    if (preg_match('/(\d+)\s*-?\s*ton\s*truck/i', $text, $matches)) {
+        return $matches[1];
+    }
+    if (preg_match('/(\d+)\s*-?\s*ton/i', $text, $matches)) {
         return $matches[1];
     }
     return null;
