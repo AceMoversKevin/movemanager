@@ -18,6 +18,11 @@ $dateFilter = isset($_GET['date_filter']) ? $_GET['date_filter'] : '';
 $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : '';
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 
+// Handle pagination
+$leadsPerPage = 50;
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $leadsPerPage;
+
 // Handle column visibility
 $allColumns = ['lead_id', 'lead_name', 'bedrooms', 'pickup', 'dropoff', 'lead_date', 'phone', 'email', 'details', 'booking_status', 'created_at', 'Source', 'AssignedTo'];
 $visibleColumns = isset($_GET['visible_columns']) ? (is_array($_GET['visible_columns']) ? $_GET['visible_columns'] : explode(',', $_GET['visible_columns'])) : array_diff($allColumns, ['created_at']);
@@ -79,6 +84,9 @@ if ($dateFilter) {
 // Add sorting criteria to the query
 $query .= " ORDER BY $sortColumn $sortOrder";
 
+// Add pagination to the query
+$query .= " LIMIT $leadsPerPage OFFSET $offset";
+
 $result = $conn->query($query);
 
 // Fetch the last assigned person and count the leads in the current cycle
@@ -97,7 +105,67 @@ while ($leadsCycleRow = $leadsCycleResult->fetch_assoc()) {
         break;
     }
 }
+
+// Get the total number of leads for pagination
+$totalLeadsQuery = "SELECT COUNT(*) AS total FROM leads WHERE 1=1";
+
+// Add search term filtering
+if ($searchTerm) {
+    $totalLeadsQuery .= " AND (lead_id LIKE '%$searchTerm%' OR lead_name LIKE '%$searchTerm%' OR bedrooms LIKE '%$searchTerm%' OR pickup LIKE '%$searchTerm%' OR dropoff LIKE '%$searchTerm%' OR lead_date LIKE '%$searchTerm%' OR phone LIKE '%$searchTerm%' OR email LIKE '%$searchTerm%' OR details LIKE '%$searchTerm%' OR booking_status LIKE '%$searchTerm%' OR AssignedTo LIKE '%$searchTerm%' OR Source LIKE '%$searchTerm%')";
+}
+
+// Add date filter
+if ($dateFilter) {
+    switch ($dateFilter) {
+        case 'today':
+            $totalLeadsQuery .= " AND DATE(lead_date) = CURDATE()";
+            break;
+        case 'next_day':
+            $totalLeadsQuery .= " AND DATE(lead_date) = CURDATE() + INTERVAL 1 DAY";
+            break;
+        case 'next_2_days':
+            $totalLeadsQuery .= " AND DATE(lead_date) BETWEEN CURDATE() AND CURDATE() + INTERVAL 2 DAY";
+            break;
+        case 'next_3_days':
+            $totalLeadsQuery .= " AND DATE(lead_date) BETWEEN CURDATE() AND CURDATE() + INTERVAL 3 DAY";
+            break;
+        case 'next_week':
+            $totalLeadsQuery .= " AND DATE(lead_date) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 WEEK";
+            break;
+        case 'next_month':
+            $totalLeadsQuery .= " AND DATE(lead_date) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 MONTH";
+            break;
+        case 'next_year':
+            $totalLeadsQuery .= " AND DATE(lead_date) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 YEAR";
+            break;
+        case 'current_month':
+            $totalLeadsQuery .= " AND MONTH(lead_date) = MONTH(CURRENT_DATE()) AND YEAR(lead_date) = YEAR(CURRENT_DATE())";
+            break;
+        case 'last_month':
+            $totalLeadsQuery .= " AND MONTH(lead_date) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) AND YEAR(lead_date) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)";
+            break;
+        case 'current_year':
+            $totalLeadsQuery .= " AND YEAR(lead_date) = YEAR(CURRENT_DATE())";
+            break;
+        case 'last_year':
+            $totalLeadsQuery .= " AND YEAR(lead_date) = YEAR(CURRENT_DATE() - INTERVAL 1 YEAR)";
+            break;
+        case 'date_range':
+            if ($startDate && $endDate) {
+                $totalLeadsQuery .= " AND lead_date BETWEEN '$startDate' AND '$endDate'";
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+$totalLeadsResult = $conn->query($totalLeadsQuery);
+$totalLeadsRow = $totalLeadsResult->fetch_assoc();
+$totalLeads = $totalLeadsRow['total'];
+$totalPages = ceil($totalLeads / $leadsPerPage);
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -274,6 +342,31 @@ while ($leadsCycleRow = $leadsCycleResult->fetch_assoc()) {
                             <?php endwhile; ?>
                         </tbody>
                     </table>
+
+                    <!-- Pagination Controls -->
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination">
+                            <?php if ($page > 1) : ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<?= $page - 1 ?>&sort=<?= $sortColumn ?>&order=<?= $sortOrder ?>&search=<?= $searchTerm ?>&date_filter=<?= $dateFilter ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&visible_columns=<?= implode(',', $visibleColumns) ?>" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
+                            <?php for ($i = 1; $i <= $totalPages; $i++) : ?>
+                                <li class="page-item <?= $i == $page ? 'active' : '' ?>">
+                                    <a class="page-link" href="?page=<?= $i ?>&sort=<?= $sortColumn ?>&order=<?= $sortOrder ?>&search=<?= $searchTerm ?>&date_filter=<?= $dateFilter ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&visible_columns=<?= implode(',', $visibleColumns) ?>"><?= $i ?></a>
+                                </li>
+                            <?php endfor; ?>
+                            <?php if ($page < $totalPages) : ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<?= $page + 1 ?>&sort=<?= $sortColumn ?>&order=<?= $sortOrder ?>&search=<?= $searchTerm ?>&date_filter=<?= $dateFilter ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&visible_columns=<?= implode(',', $visibleColumns) ?>" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
+                    </nav>
                 </div>
             </main>
         </div>
