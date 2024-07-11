@@ -5,6 +5,7 @@ require 'db.php';
 function parseEmailBody($emailBody, $teamMember)
 {
     $parsedData = [];
+    error_log("Parsing email for team member: $teamMember");
 
     if ($teamMember === 'FindAMover') {
         // Parse FindAMover email body
@@ -33,6 +34,52 @@ function parseEmailBody($emailBody, $teamMember)
         }
 
         $parsedData['Source'] = 'FindAMover';
+        $parsedData['AssignedTo'] = 'Admin';
+    } elseif ($teamMember === 'HiPages') {
+        // Parse HiPages email body
+        if (preg_match('/<p\sstyle="font-size:18px;font-weight:600;color:#444;font-family:\'Source\sSans\sPro\',helvetica,arial,sans-serif;line-height:1.1em;padding:0;margin-top:5px;margin-bottom:0">(.*?)<\/p>/', $emailBody, $matches)) {
+            $parsedData['lead_name'] = trim($matches[1]);
+            error_log("Parsed lead name: " . $parsedData['lead_name']);
+        } else {
+            error_log("Failed to parse lead name");
+        }
+
+        if (preg_match('/<a\shref="tel:(.*?)"\starget="_blank">/', $emailBody, $matches)) {
+            $parsedData['phone'] = trim($matches[1]);
+            error_log("Parsed phone: " . $parsedData['phone']);
+        } else {
+            error_log("Failed to parse phone");
+        }
+
+        if (preg_match('/<a\shref="mailto:(.*?)"\starget="_blank">/', $emailBody, $matches)) {
+            $parsedData['email'] = trim($matches[1]);
+            error_log("Parsed email: " . $parsedData['email']);
+        } else {
+            error_log("Failed to parse email");
+        }
+
+        if (preg_match('/<p\sstyle="font-size:16px;font-weight:400;color:#444;font-family:\'Source\sSans\sPro\',helvetica,arial,sans-serif;line-height:1.1em;padding:0;margin-top:8px;margin-bottom:10px"><img.*?&nbsp;(.*?)<\/p>/', $emailBody, $matches)) {
+            $parsedData['pickup'] = trim($matches[1]);
+            error_log("Parsed pickup: " . $parsedData['pickup']);
+        } else {
+            error_log("Failed to parse pickup");
+        }
+
+        if (preg_match('/<span\sstyle="font-size:16px;color:#444;font-weight:600;font-family:\'Source\sSans\sPro\',helvetica,arial,san-serif;line-height:1.5em;padding:0;margin:0">Where are you moving to:<\/span>(.*?)<\/p>/', $emailBody, $matches)) {
+            $parsedData['dropoff'] = trim(strip_tags($matches[1]));
+            error_log("Parsed dropoff: " . $parsedData['dropoff']);
+        } else {
+            error_log("Failed to parse dropoff");
+        }
+
+        if (preg_match('/<span\sstyle="font-size:16px;color:#444;font-weight:600;font-family:\'Source\sSans\sPro\',helvetica,arial,san-serif;line-height:1.5em;padding:0;margin:0">preferred_moving_date:<\/span>(.*?)<\/p>/', $emailBody, $matches)) {
+            $parsedData['lead_date'] = date('Y-m-d', strtotime(trim($matches[1])));
+            error_log("Parsed lead date: " . $parsedData['lead_date']);
+        } else {
+            error_log("Failed to parse lead date");
+        }
+
+        $parsedData['Source'] = 'HiPages';
         $parsedData['AssignedTo'] = 'Admin';
     } elseif ($teamMember === 'MovingSelect') {
         // Parse MovingSelect email body
