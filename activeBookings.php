@@ -4,8 +4,8 @@ require 'db.php';
 
 // Check if the user is logged in, otherwise redirect to login page
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['role'] != 'SuperAdmin')) {
-    header("Location: login.php");
-    exit;
+header("Location: login.php");
+exit;
 }
 
 // Fetch sorting criteria from the query parameters
@@ -22,62 +22,77 @@ $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 $allColumns = ['Name', 'Email', 'Phone', 'Bedrooms', 'BookingDate', 'MovingDate', 'PickupLocation', 'DropoffLocation', 'TruckSize', 'CalloutFee', 'Rate', 'Deposit', 'TimeSlot', 'AdditionalDetails'];
 $visibleColumns = isset($_GET['visible_columns']) ? (is_array($_GET['visible_columns']) ? $_GET['visible_columns'] : explode(',', $_GET['visible_columns'])) : $allColumns;
 
+// Handle pagination
+$itemsPerPage = 10; // Adjust this value as needed
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $itemsPerPage;
+
 // Fetch active bookings from the database
 $query = "SELECT * FROM Bookings WHERE isActive = 1";
 
 // Add search term filtering
 if ($searchTerm) {
-    $query .= " AND (Name LIKE '%$searchTerm%' OR Email LIKE '%$searchTerm%' OR Phone LIKE '%$searchTerm%' OR Bedrooms LIKE '%$searchTerm%' OR BookingDate LIKE '%$searchTerm%' OR MovingDate LIKE '%$searchTerm%' OR PickupLocation LIKE '%$searchTerm%' OR DropoffLocation LIKE '%$searchTerm%' OR TruckSize LIKE '%$searchTerm%' OR CalloutFee LIKE '%$searchTerm%' OR Rate LIKE '%$searchTerm%' OR Deposit LIKE '%$searchTerm%' OR TimeSlot LIKE '%$searchTerm%' OR AdditionalDetails LIKE '%$searchTerm%')";
+$query .= " AND (Name LIKE '%$searchTerm%' OR Email LIKE '%$searchTerm%' OR Phone LIKE '%$searchTerm%' OR Bedrooms LIKE '%$searchTerm%' OR BookingDate LIKE '%$searchTerm%' OR MovingDate LIKE '%$searchTerm%' OR PickupLocation LIKE '%$searchTerm%' OR DropoffLocation LIKE '%$searchTerm%' OR TruckSize LIKE '%$searchTerm%' OR CalloutFee LIKE '%$searchTerm%' OR Rate LIKE '%$searchTerm%' OR Deposit LIKE '%$searchTerm%' OR TimeSlot LIKE '%$searchTerm%' OR AdditionalDetails LIKE '%$searchTerm%')";
 }
 
 // Add date filter
 if ($dateFilter) {
-    switch ($dateFilter) {
-        case 'today':
-            $query .= " AND DATE(MovingDate) = CURDATE()";
-            break;
-        case 'next_day':
-            $query .= " AND DATE(MovingDate) = CURDATE() + INTERVAL 1 DAY";
-            break;
-        case 'next_2_days':
-            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 2 DAY";
-            break;
-        case 'next_3_days':
-            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 3 DAY";
-            break;
-        case 'next_week':
-            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 WEEK";
-            break;
-        case 'next_month':
-            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 MONTH";
-            break;
-        case 'next_year':
-            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 YEAR";
-            break;
-        case 'current_month':
-            $query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE()) AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
-            break;
-        case 'last_month':
-            $query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)";
-            break;
-        case 'current_year':
-            $query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
-            break;
-        case 'last_year':
-            $query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 YEAR)";
-            break;
-        case 'date_range':
-            if ($startDate && $endDate) {
-                $query .= " AND MovingDate BETWEEN '$startDate' AND '$endDate'";
-            }
-            break;
-        default:
-            break;
-    }
+switch ($dateFilter) {
+case 'today':
+$query .= " AND DATE(MovingDate) = CURDATE()";
+break;
+case 'next_day':
+$query .= " AND DATE(MovingDate) = CURDATE() + INTERVAL 1 DAY";
+break;
+case 'next_2_days':
+$query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 2 DAY";
+break;
+case 'next_3_days':
+$query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 3 DAY";
+break;
+case 'next_week':
+$query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 WEEK";
+break;
+case 'next_month':
+$query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 MONTH";
+break;
+case 'next_year':
+$query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 YEAR";
+break;
+case 'current_month':
+$query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE()) AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
+break;
+case 'last_month':
+$query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)";
+break;
+case 'current_year':
+$query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
+break;
+case 'last_year':
+$query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 YEAR)";
+break;
+case 'date_range':
+if ($startDate && $endDate) {
+$query .= " AND MovingDate BETWEEN '$startDate' AND '$endDate'";
+}
+break;
+default:
+break;
+}
 }
 
 // Add sorting criteria to the query
 $query .= " ORDER BY $sortColumn $sortOrder";
+
+// Get the total number of records for pagination
+$totalQuery = "SELECT COUNT(*) as total FROM (" . $query . ") as subquery";
+$totalResult = $conn->query($totalQuery);
+$totalRow = $totalResult->fetch_assoc();
+$totalRecords = $totalRow['total'];
+$totalPages = ceil($totalRecords / $itemsPerPage);
+
+// Add pagination to the query
+$query .= " LIMIT $itemsPerPage OFFSET $offset";
 
 $result = $conn->query($query);
 ?>
@@ -205,7 +220,6 @@ $result = $conn->query($query);
                     <a href="extractBookingInfo.php?sort_column=<?= htmlspecialchars($sortColumn) ?>&sort_order=<?= htmlspecialchars($sortOrder) ?>&search=<?= htmlspecialchars($searchTerm) ?>&date_filter=<?= htmlspecialchars($dateFilter) ?>&start_date=<?= htmlspecialchars($startDate) ?>&end_date=<?= htmlspecialchars($endDate) ?>" class="btn btn-secondary">Extract Booking Info</a>
                 </form>
 
-
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover">
                         <thead>
@@ -223,7 +237,11 @@ $result = $conn->query($query);
                                 <?php if (in_array('CalloutFee', $visibleColumns)) : ?><th class="sortable" data-sort="CalloutFee">Callout Fee</th><?php endif; ?>
                                 <?php if (in_array('Rate', $visibleColumns)) : ?><th class="sortable" data-sort="Rate">Rate</th><?php endif; ?>
                                 <?php if (in_array('Deposit', $visibleColumns)) : ?><th class="sortable" data-sort="Deposit">Deposit</th><?php endif; ?>
-                                <?php if (in_array('TimeSlot', $visibleColumns)) : ?><th class="sortable" data-sort="TimeSlot">Time Slot</th><?php endif; ?>
+                                <?php if (in_array('TimeSlot', $visibleColumns)) : ?>
+                                    <td class="editable-time" data-field="TimeSlot" data-id="<?= $row['BookingID'] ?>">
+                                        <input type="time" class="form-control" value="<?= htmlspecialchars($row['TimeSlot']) ?>" readonly>
+                                    </td>
+                                <?php endif; ?>
                                 <?php if (in_array('AdditionalDetails', $visibleColumns)) : ?><th class="sortable" data-sort="AdditionalDetails">Additional Details</th><?php endif; ?>
                             </tr>
                         </thead>
@@ -271,6 +289,21 @@ $result = $conn->query($query);
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination -->
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination justify-content-center">
+                        <?php if ($page > 1) : ?>
+                            <li class="page-item"><a class="page-link" href="?page=<?= $page - 1 ?>&sort_column=<?= htmlspecialchars($sortColumn) ?>&sort_order=<?= htmlspecialchars($sortOrder) ?>&search=<?= htmlspecialchars($searchTerm) ?>&date_filter=<?= htmlspecialchars($dateFilter) ?>&start_date=<?= htmlspecialchars($startDate) ?>&end_date=<?= htmlspecialchars($endDate) ?>&visible_columns=<?= implode(',', $visibleColumns) ?>">Previous</a></li>
+                        <?php endif; ?>
+                        <?php for ($i = 1; $i <= $totalPages; $i++) : ?>
+                            <li class="page-item <?= $i == $page ? 'active' : '' ?>"><a class="page-link" href="?page=<?= $i ?>&sort_column=<?= htmlspecialchars($sortColumn) ?>&sort_order=<?= htmlspecialchars($sortOrder) ?>&search=<?= htmlspecialchars($searchTerm) ?>&date_filter=<?= htmlspecialchars($dateFilter) ?>&start_date=<?= htmlspecialchars($startDate) ?>&end_date=<?= htmlspecialchars($endDate) ?>&visible_columns=<?= implode(',', $visibleColumns) ?>"><?= $i ?></a></li>
+                        <?php endfor; ?>
+                        <?php if ($page < $totalPages) : ?>
+                            <li class="page-item"><a class="page-link" href="?page=<?= $page + 1 ?>&sort_column=<?= htmlspecialchars($sortColumn) ?>&sort_order=<?= htmlspecialchars($sortOrder) ?>&search=<?= htmlspecialchars($searchTerm) ?>&date_filter=<?= htmlspecialchars($dateFilter) ?>&start_date=<?= htmlspecialchars($startDate) ?>&end_date=<?= htmlspecialchars($endDate) ?>&visible_columns=<?= implode(',', $visibleColumns) ?>">Next</a></li>
+                        <?php endif; ?>
+                    </ul>
+                </nav>
             </main>
         </div>
     </div>
