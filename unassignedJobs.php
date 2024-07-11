@@ -22,60 +22,63 @@ $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 $allColumns = ['Name', 'Email', 'Phone', 'Bedrooms', 'BookingDate', 'MovingDate', 'PickupLocation', 'DropoffLocation'];
 $visibleColumns = isset($_GET['visible_columns']) ? (is_array($_GET['visible_columns']) ? $_GET['visible_columns'] : explode(',', $_GET['visible_columns'])) : $allColumns;
 
-// Query to select bookings with less than 2 employees assigned
-$query = "
+// Pagination parameters
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$recordsPerPage = 10;
+$offset = ($page - 1) * $recordsPerPage;
+
+// Base query to select bookings with less than 2 employees assigned
+$baseQuery = "
     SELECT b.*, COUNT(ba.BookingID) as AssignedCount
     FROM Bookings b
     LEFT JOIN BookingAssignments ba ON b.BookingID = ba.BookingID
     WHERE b.isActive = 1
-    GROUP BY b.BookingID
-    HAVING AssignedCount < 2
 ";
 
 // Add search term filtering
 if ($searchTerm) {
-    $query .= " AND (b.Name LIKE '%$searchTerm%' OR b.Email LIKE '%$searchTerm%' OR b.Phone LIKE '%$searchTerm%' OR b.Bedrooms LIKE '%$searchTerm%' OR b.BookingDate LIKE '%$searchTerm%' OR b.MovingDate LIKE '%$searchTerm%' OR b.PickupLocation LIKE '%$searchTerm%' OR b.DropoffLocation LIKE '%$searchTerm%')";
+    $baseQuery .= " AND (b.Name LIKE '%$searchTerm%' OR b.Email LIKE '%$searchTerm%' OR b.Phone LIKE '%$searchTerm%' OR b.Bedrooms LIKE '%$searchTerm%' OR b.BookingDate LIKE '%$searchTerm%' OR b.MovingDate LIKE '%$searchTerm%' OR b.PickupLocation LIKE '%$searchTerm%' OR b.DropoffLocation LIKE '%$searchTerm%')";
 }
 
 // Add date filter
 if ($dateFilter) {
     switch ($dateFilter) {
         case 'today':
-            $query .= " AND DATE(b.MovingDate) = CURDATE()";
+            $baseQuery .= " AND DATE(b.MovingDate) = CURDATE()";
             break;
         case 'next_day':
-            $query .= " AND DATE(b.MovingDate) = CURDATE() + INTERVAL 1 DAY";
+            $baseQuery .= " AND DATE(b.MovingDate) = CURDATE() + INTERVAL 1 DAY";
             break;
         case 'next_2_days':
-            $query .= " AND DATE(b.MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 2 DAY";
+            $baseQuery .= " AND DATE(b.MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 2 DAY";
             break;
         case 'next_3_days':
-            $query .= " AND DATE(b.MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 3 DAY";
+            $baseQuery .= " AND DATE(b.MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 3 DAY";
             break;
         case 'next_week':
-            $query .= " AND DATE(b.MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 WEEK";
+            $baseQuery .= " AND DATE(b.MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 WEEK";
             break;
         case 'next_month':
-            $query .= " AND DATE(b.MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 MONTH";
+            $baseQuery .= " AND DATE(b.MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 MONTH";
             break;
         case 'next_year':
-            $query .= " AND DATE(b.MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 YEAR";
+            $baseQuery .= " AND DATE(b.MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 YEAR";
             break;
         case 'current_month':
-            $query .= " AND MONTH(b.MovingDate) = MONTH(CURRENT_DATE()) AND YEAR(b.MovingDate) = YEAR(CURRENT_DATE())";
+            $baseQuery .= " AND MONTH(b.MovingDate) = MONTH(CURRENT_DATE()) AND YEAR(b.MovingDate) = YEAR(CURRENT_DATE())";
             break;
         case 'last_month':
-            $query .= " AND MONTH(b.MovingDate) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) AND YEAR(b.MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)";
+            $baseQuery .= " AND MONTH(b.MovingDate) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) AND YEAR(b.MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)";
             break;
         case 'current_year':
-            $query .= " AND YEAR(b.MovingDate) = YEAR(CURRENT_DATE())";
+            $baseQuery .= " AND YEAR(b.MovingDate) = YEAR(CURRENT_DATE())";
             break;
         case 'last_year':
-            $query .= " AND YEAR(b.MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 YEAR)";
+            $baseQuery .= " AND YEAR(b.MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 YEAR)";
             break;
         case 'date_range':
             if ($startDate && $endDate) {
-                $query .= " AND b.MovingDate BETWEEN '$startDate' AND '$endDate'";
+                $baseQuery .= " AND b.MovingDate BETWEEN '$startDate' AND '$endDate'";
             }
             break;
         default:
@@ -83,17 +86,26 @@ if ($dateFilter) {
     }
 }
 
-// Add sorting criteria to the query
-$query .= " ORDER BY $sortColumn $sortOrder";
+// Query to get the total number of records
+$totalQuery = "
+    SELECT COUNT(*) as total 
+    FROM ($baseQuery GROUP BY b.BookingID HAVING COUNT(ba.BookingID) < 2) as subquery
+";
+$totalResult = $conn->query($totalQuery);
+$totalRows = $totalResult->fetch_assoc()['total'];
+$totalPages = ceil($totalRows / $recordsPerPage);
 
+// Add grouping, having, sorting, and pagination to the base query
+$query = "$baseQuery GROUP BY b.BookingID HAVING COUNT(ba.BookingID) < 2 ORDER BY $sortColumn $sortOrder LIMIT $offset, $recordsPerPage";
 $result = $conn->query($query);
 
 // Fetch available active Driver and Helper employees
 $availableEmployeesQuery = "SELECT PhoneNo, Name, EmployeeType FROM Employees WHERE EmployeeType IN ('Driver', 'Helper') AND isActive = 1";
 $availableEmployeesResult = $conn->query($availableEmployeesQuery);
 $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
-
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -148,25 +160,25 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
                     <input type="text" name="search" value="<?php echo htmlspecialchars($searchTerm); ?>" placeholder="Search Jobs" class="form-control" style="display:inline-block; width: auto;">
                     <select name="date_filter" id="date_filter" class="form-control" style="display:inline-block; width: auto;">
                         <option value="">Select Date Filter</option>
-                        <option value="today">Today</option>
-                        <option value="next_day">Next Day</option>
-                        <option value="next_2_days">Next 2 Days</option>
-                        <option value="next_3_days">Next 3 Days</option>
-                        <option value="next_week">Next Week</option>
-                        <option value="next_month">Next Month</option>
-                        <option value="next_year">Next Year</option>
-                        <option value="current_month">Current Month</option>
-                        <option value="last_month">Last Month</option>
-                        <option value="current_year">Current Year</option>
-                        <option value="last_year">Last Year</option>
-                        <option value="date_range">Date Range</option>
+                        <option value="today" <?= $dateFilter == 'today' ? 'selected' : '' ?>>Today</option>
+                        <option value="next_day" <?= $dateFilter == 'next_day' ? 'selected' : '' ?>>Next Day</option>
+                        <option value="next_2_days" <?= $dateFilter == 'next_2_days' ? 'selected' : '' ?>>Next 2 Days</option>
+                        <option value="next_3_days" <?= $dateFilter == 'next_3_days' ? 'selected' : '' ?>>Next 3 Days</option>
+                        <option value="next_week" <?= $dateFilter == 'next_week' ? 'selected' : '' ?>>Next Week</option>
+                        <option value="next_month" <?= $dateFilter == 'next_month' ? 'selected' : '' ?>>Next Month</option>
+                        <option value="next_year" <?= $dateFilter == 'next_year' ? 'selected' : '' ?>>Next Year</option>
+                        <option value="current_month" <?= $dateFilter == 'current_month' ? 'selected' : '' ?>>Current Month</option>
+                        <option value="last_month" <?= $dateFilter == 'last_month' ? 'selected' : '' ?>>Last Month</option>
+                        <option value="current_year" <?= $dateFilter == 'current_year' ? 'selected' : '' ?>>Current Year</option>
+                        <option value="last_year" <?= $dateFilter == 'last_year' ? 'selected' : '' ?>>Last Year</option>
+                        <option value="date_range" <?= $dateFilter == 'date_range' ? 'selected' : '' ?>>Date Range</option>
                     </select>
                     <select name="sort_column" id="sort_column" class="form-control" style="display:inline-block; width: auto;">
                         <option value="MovingDate" <?= $sortColumn == 'MovingDate' ? 'selected' : '' ?>>Sort by Moving Date</option>
                         <option value="BookingDate" <?= $sortColumn == 'BookingDate' ? 'selected' : '' ?>>Sort by Booking Date</option>
                     </select>
-                    <input type="date" name="start_date" id="start_date" class="form-control" style="display:inline-block; width: auto;">
-                    <input type="date" name="end_date" id="end_date" class="form-control" style="display:inline-block; width: auto;">
+                    <input type="date" name="start_date" id="start_date" value="<?= htmlspecialchars($startDate) ?>" class="form-control" style="display:inline-block; width: auto;">
+                    <input type="date" name="end_date" id="end_date" value="<?= htmlspecialchars($endDate) ?>" class="form-control" style="display:inline-block; width: auto;">
                     <div class="mb-2">
                         <button type="button" id="select_all" class="btn btn-outline-secondary btn-sm">Select All</button>
                         <button type="button" id="deselect_all" class="btn btn-outline-secondary btn-sm">Deselect All</button>
@@ -304,6 +316,27 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination Links -->
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        <?php if ($page > 1) : ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?page=<?= $page - 1 ?>&sort=<?= $sortColumn ?>&order=<?= $sortOrder ?>&search=<?= $searchTerm ?>&date_filter=<?= $dateFilter ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&visible_columns=<?= implode(',', $visibleColumns) ?>">Previous</a>
+                            </li>
+                        <?php endif; ?>
+                        <?php for ($i = 1; $i <= $totalPages; $i++) : ?>
+                            <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
+                                <a class="page-link" href="?page=<?= $i ?>&sort=<?= $sortColumn ?>&order=<?= $sortOrder ?>&search=<?= $searchTerm ?>&date_filter=<?= $dateFilter ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&visible_columns=<?= implode(',', $visibleColumns) ?>"><?= $i ?></a>
+                            </li>
+                        <?php endfor; ?>
+                        <?php if ($page < $totalPages) : ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?page=<?= $page + 1 ?>&sort=<?= $sortColumn ?>&order=<?= $sortOrder ?>&search=<?= $searchTerm ?>&date_filter=<?= $dateFilter ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&visible_columns=<?= implode(',', $visibleColumns) ?>">Next</a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </nav>
             </main>
         </div>
     </div>
@@ -402,7 +435,7 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
                     '&start_date=' + encodeURIComponent('<?= $startDate ?>') +
                     '&end_date=' + encodeURIComponent('<?= $endDate ?>') +
                     '&visible_columns=' + encodeURIComponent('<?= implode(',', $visibleColumns) ?>') +
-                    '&sort_column=' + encodeURIComponent('<?= $sortColumn ?>');
+                    '&page=<?= $page ?>';
                 window.location.href = newUrl;
             });
 
