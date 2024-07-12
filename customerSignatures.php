@@ -10,6 +10,12 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
 }
 
 // Include any necessary PHP code for handling backend logic
+$search = isset($_GET['search']) ? '%' . $_GET['search'] . '%' : '%';
+
+$stmt = $conn->prepare("SELECT BookingID, Name, Email, Phone, PickupLocation, DropoffLocation, MovingDate, signature FROM Bookings WHERE signature IS NOT NULL AND (Name LIKE ? OR BookingID LIKE ?)");
+$stmt->bind_param("ss", $search, $search);
+$stmt->execute();
+$result = $stmt->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -28,16 +34,15 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
     <!-- Additional styling for futuristic look -->
     <style>
         .card {
-            background: #2b2f3a;
             border: none;
             border-radius: 10px;
-            color: #ffffff;
         }
 
         .card-header {
-            background: #3c3f50;
             border-bottom: 1px solid #4b4e62;
             border-radius: 10px 10px 0 0;
+            color: #0000;
+            text-decoration-color: #3c3f50;
         }
 
         .card-title {
@@ -52,17 +57,6 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
             border: 1px solid #4b4e62;
             border-radius: 5px;
             max-height: 200px;
-        }
-
-        .container-fluid {
-            background: #1f1f2e;
-            padding: 20px;
-            border-radius: 10px;
-        }
-
-        main {
-            background: #12121a;
-            color: #ffffff;
         }
 
         .border-bottom {
@@ -93,17 +87,21 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2" id="Main-Heading">View Customer Signatures</h1>
                 </div>
+                <!-- Search Form -->
+                <form class="form-inline mb-3" method="GET" action="">
+                    <input class="form-control mr-sm-2" type="search" placeholder="Search by Customer Name or Booking ID" aria-label="Search" name="search" value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>">
+                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                </form>
                 <!-- Dashboard content -->
                 <div class="container-fluid">
                     <div class="row">
                         <?php
-                        require 'db.php';
-                        $stmt = $conn->prepare("SELECT BookingID, Name, Email, Phone, PickupLocation, DropoffLocation, MovingDate, signature FROM Bookings WHERE signature IS NOT NULL");
-                        $stmt->execute();
-                        $result = $stmt->get_result();
+
+
 
                         if ($result->num_rows > 0) {
                             while ($row = $result->fetch_assoc()) {
+                                $signatureUrl = 'https://movers.alphamovers.com.au/' . htmlspecialchars($row['signature']);
                                 echo '
                     <div class="col-lg-6 mb-4">
                         <div class="card shadow-sm">
@@ -118,7 +116,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
                                 <p><strong>Dropoff Location:</strong> ' . htmlspecialchars($row['DropoffLocation']) . '</p>
                                 <p><strong>Moving Date:</strong> ' . htmlspecialchars($row['MovingDate']) . '</p>
                                 <div class="text-center">
-                                    <img src="' . htmlspecialchars($row['signature']) . '" class="img-fluid" alt="Customer Signature">
+                                    <img src="' . $signatureUrl . '" class="img-fluid" alt="Customer Signature">
                                 </div>
                             </div>
                         </div>
