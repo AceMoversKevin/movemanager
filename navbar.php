@@ -40,6 +40,9 @@
                                 <li class="nav-item">
                                     <a class="nav-link" href="createInvoice.php">Create Invoice</a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="customerSignatures.php">Customer Signatures</a>
+                                </li>
                             </ul>
                         </li>
                         <li class="nav-item">
