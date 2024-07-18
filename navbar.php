@@ -65,9 +65,29 @@
                             </ul>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="leadManagement.php">
+                            <a class="nav-link" href="#leadsSubMenu" data-toggle="collapse" aria-expanded="false">
                                 Leads
                             </a>
+                            <ul class="collapse list-unstyled sub-menu" id="leadsSubMenu">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="leadManagement.php">Google Leads</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">Moving Select Leads</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">Prices Compare Leads</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">FindAMover Leads</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">HiPages Leads</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">Facebook Leads</a>
+                                </li>
+                            </ul>
                         </li>
 
                         <?php if ($_SESSION['role'] == 'SuperAdmin') : ?>
