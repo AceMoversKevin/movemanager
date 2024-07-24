@@ -73,7 +73,7 @@
                                     <a class="nav-link" href="leadManagement.php">Google Leads</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">Moving Select Leads</a>
+                                    <a class="nav-link" href="leadManagement-ms.php">Moving Select Leads</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="#">Prices Compare Leads</a>
