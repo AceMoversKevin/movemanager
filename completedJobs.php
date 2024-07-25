@@ -26,7 +26,7 @@ BookingAssignments ba ON b.BookingID = ba.BookingID
 JOIN 
 Employees e ON ba.EmployeePhoneNo = e.PhoneNo
 WHERE 
-b.isActive = 1 AND
+b.isActive = 0 AND
 b.BookingID IN (SELECT BookingID FROM CompletedJobs)
 GROUP BY 
 b.BookingID;
