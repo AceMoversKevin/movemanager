@@ -280,7 +280,7 @@ $totalPages = ceil($totalLeads / $leadsPerPage);
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary">Filter</button>
-                    <button type="button" onclick="window.location.href='leadManagement.php'" class="btn btn-outline-secondary">Reset</button>
+                    <button type="button" onclick="window.location.href='leadManagement-ms.php'" class="btn btn-outline-secondary">Reset</button>
                     <!-- Button to parse raw leads -->
                     <a href="parseRawLeads.php" class="btn btn-secondary">View Raw Leads</a>
                     <!-- Display the last assigned person and cycle count -->
