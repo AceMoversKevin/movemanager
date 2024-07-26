@@ -86,15 +86,36 @@ function toMelbourneTime($time)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Handle the start of the job
     if (isset($_POST['startJob'])) {
-        // Start the job and record the start time
-        $startTime = new DateTime('now', new DateTimeZone('Australia/Melbourne'));
-        $stmt = $conn->prepare("INSERT INTO JobTimings (BookingID, StartTime) VALUES (?, ?)");
-        $stmt->bind_param("is", $bookingID, $startTime->format('Y-m-d H:i:s'));
-        $stmt->execute();
-        $stmt->close();
-        // Redirect to refresh and show the job as started
-        header("Location: emulatedDetailsPage.php?bookingID=$bookingID");
-        exit;
+        // Check if the signature is provided
+        if (!isset($_POST['signature']) || empty($_POST['signature'])) {
+            echo "<script>alert('Signature is required to start the job.');</script>";
+        } else {
+            // Save the signature as an image file
+            $signatureData = $_POST['signature'];
+            $signatureData = str_replace('data:image/png;base64,', '', $signatureData);
+            $signatureData = str_replace(' ', '+', $signatureData);
+            $signature = base64_decode($signatureData);
+
+            $customerName = preg_replace('/[^a-zA-Z0-9]/', '_', $jobDetails['BookingName']); // Sanitize customer name
+            $fileName = "signatures/{$bookingID}_{$customerName}.png";
+            file_put_contents($fileName, $signature);
+
+            // Save the signature file path in the Bookings table
+            $stmt = $conn->prepare("UPDATE Bookings SET signature = ? WHERE BookingID = ?");
+            $stmt->bind_param("si", $fileName, $bookingID);
+            $stmt->execute();
+            $stmt->close();
+
+            // Start the job and record the start time
+            $startTime = new DateTime('now', new DateTimeZone('Australia/Melbourne'));
+            $stmt = $conn->prepare("INSERT INTO JobTimings (BookingID, StartTime) VALUES (?, ?)");
+            $stmt->bind_param("is", $bookingID, $startTime->format('Y-m-d H:i:s'));
+            $stmt->execute();
+            $stmt->close();
+            // Redirect to refresh and show the job as started
+            header("Location: jobDetails.php?bookingID=$bookingID");
+            exit;
+        }
     }
 
     // Handle the end of the job
@@ -185,7 +206,14 @@ $isComplete = checkJobCompletionStatus($conn, $bookingID);
     <!-- Additional styles -->
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-
+    <!-- Signature Pad CSS -->
+    <style>
+        .signature-pad {
+            border: 1px solid #000;
+            width: 100%;
+            height: 200px;
+        }
+    </style>
 </head>
 
 <body>
@@ -214,8 +242,16 @@ $isComplete = checkJobCompletionStatus($conn, $bookingID);
                     <h2>Job Details for <?= htmlspecialchars($jobDetails['BookingName']) ?>'s Move</h2>
                     <p><strong>Phone:</strong> <?= htmlspecialchars($jobDetails['Phone']) ?></p>
                     <p><strong>Email:</strong> <?= htmlspecialchars($jobDetails['Email']) ?></p>
-                    <p><strong>Pickup Location:</strong> <?= htmlspecialchars($jobDetails['PickupLocation']) ?></p>
-                    <p><strong>Dropoff Location:</strong> <?= htmlspecialchars($jobDetails['DropoffLocation']) ?></p>
+                    <p><strong>Pickup Location:</strong>
+                        <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($jobDetails['PickupLocation']) ?>" target="_blank">
+                            <?= htmlspecialchars($jobDetails['PickupLocation']) ?>
+                        </a>
+                    </p>
+                    <p><strong>Dropoff Location:</strong>
+                        <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($jobDetails['DropoffLocation']) ?>" target="_blank">
+                            <?= htmlspecialchars($jobDetails['DropoffLocation']) ?>
+                        </a>
+                    </p>
                     <p><strong>Time Slot:</strong> <?= date('H:i', strtotime($jobDetails['TimeSlot'])) ?></p>
                     <p><strong>Callout Fee:</strong> <?= number_format($jobDetails['CalloutFee'], 2) ?> h</p>
                     <p><strong>The team for this move:</strong> <?= $employeeList ?></p>
@@ -228,8 +264,13 @@ $isComplete = checkJobCompletionStatus($conn, $bookingID);
                             <p>Time elapsed: <span id="timeElapsed"></span></p>
                         </form>
                     <?php else : ?>
-                        <!-- Separate form for starting the job -->
+                        <!-- Signature and job start form -->
                         <form method="post" id="startJobForm">
+                            <div class="form-group">
+                                <label for="signature">Customer Signature:</label>
+                                <canvas id="signaturePad" class="signature-pad"></canvas>
+                                <input type="hidden" id="signature" name="signature">
+                            </div>
                             <button type="submit" id="startJobButton" name="startJob" class="btn btn-warning btn-block">Start Job</button>
                         </form>
                     <?php endif; ?>
@@ -239,6 +280,7 @@ $isComplete = checkJobCompletionStatus($conn, $bookingID);
     </div>
 
     <!-- Bootstrap JS, Popper.js, and jQuery -->
+    <script src="signature_pad.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -285,6 +327,27 @@ $isComplete = checkJobCompletionStatus($conn, $bookingID);
                 startTimer();
             }
 
+            // Initialize Signature Pad
+            const canvas = document.getElementById('signaturePad');
+            const signaturePad = new SignaturePad(canvas);
+            const startJobForm = document.getElementById('startJobForm');
+
+            startJobForm.addEventListener('submit', function(event) {
+                if (signaturePad.isEmpty()) {
+                    alert('Please provide a signature first.');
+                    event.preventDefault();
+                } else {
+                    const signatureData = signaturePad.toDataURL();
+                    document.getElementById('signature').value = signatureData;
+
+                    // Additional confirmation dialog
+                    const confirmation = confirm("I hereby confirm that the Move is ready to be started.");
+                    if (!confirmation) {
+                        event.preventDefault();
+                    }
+                }
+            });
+
         });
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -300,12 +363,12 @@ $isComplete = checkJobCompletionStatus($conn, $bookingID);
                     if (confirm('Are you sure you want to end the job?')) {
                         console.log('First Dialog Option Triggered');
                         //form.submit()
-                        const confirmationInput = prompt("Type 'CONFIRM END' to confirm END of job.");
-                        if (confirmationInput === "CONFIRM END") {
+                        const confirmationInput = prompt("Type 'end' to confirm END of job.");
+                        if (confirmationInput === "end") {
                             console.log('Form submission initiated'); // Check if submission is initiated
                             form.submit(); // Attempt to submit the form
                         } else {
-                            alert('Job ending canceled. You did not type "CONFIRM END".');
+                            alert('Job ending canceled. You did not type "end".');
                             event.preventDefault();
                         }
                     } else {
