@@ -6,8 +6,8 @@ require_once './dompdf-3.0.0/dompdf/autoload.inc.php'; // Adjust the path if nee
 require_once 'PHPMailer-master/src/PHPMailer.php'; // Adjust the path 
 require_once 'PHPMailer-master/src/SMTP.php'; // Adjust the path 
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+// use PHPMailer\PHPMailer\PHPMailer;
+// use PHPMailer\PHPMailer\Exception;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 // Fetch job details from the database
@@ -16,7 +16,7 @@ if (isset($_GET['bookingID'])) {
 
     // Prepare the correct SQL query
     $stmt = $conn->prepare("
-        SELECT 
+        SELECT  
             b.BookingID, b.Name AS BookingName, b.Email, b.Phone, b.Bedrooms, b.BookingDate, 
             b.MovingDate, b.PickupLocation, b.DropoffLocation, b.TruckSize, b.CalloutFee, 
             b.Rate, b.Deposit, b.TimeSlot, b.isActive AS BookingActive,
@@ -58,7 +58,7 @@ function calculateSubTotal($totalLaborTime, $rate, $calloutfee)
     return (($totalLaborTime + $calloutfee) * $rate);
 }
 
-// Create Invoice HTML Content (based on your provided structure)
+// Create Invoice HTML Content (based on the provided structure)
 $invoiceHtml = '
 <div class="invoice-box">
     <table>
@@ -279,7 +279,7 @@ body a {
 }
 </style>';
 
-// Function to delete all PDF files in the Invoices directory
+// Function to delete all PDF files in the Invoices directory (Not in use at the moment)
 function clearInvoicesFolder($directory)
 {
     // Ensure the directory exists
@@ -331,52 +331,19 @@ $bookingName = str_replace(' ', '_', $bookingName);
 $email = str_replace(' ', '_', $email);
 $email = preg_replace('/[^A-Za-z0-9\_\-\.]/', '', $email);
 
-$pdfFilePath = "./Invoices/invoice_{$bookingID}_{$bookingName}_{$email}.pdf";
+$pdfFilePath = "./Invoices/{$bookingID}_{$bookingName}_invoice.pdf";
 
 file_put_contents($pdfFilePath, $pdfOutput);
 
-// Prepare PHPMailer
-$mail = new PHPMailer(true);
-
-try {
-    // Server settings
-    $mail->isSMTP();
-    $mail->Host = 'smtp.elasticemail.com'; // Set the SMTP server to send through
-    $mail->SMTPAuth = true;
-    $mail->Username = 'aaron@acemovers.com.au'; // SMTP username
-    $mail->Password = '8F1E23DEE343B60A0336456A6944E7B4F7DA';
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port = 587;
-
-    $mail->setFrom('aaron@acemovers.com.au', 'Ace Movers');
-    $email = $jobDetails['Email'];
-    $mail->addAddress($email); // Add a recipient
-
-    // Attach the PDF file
-    $mail->addAttachment($pdfFilePath);
-
-    // Content
-    $mail->isHTML(true); // Set email format to HTML
-    $mail->Subject = 'Invoice ACE MOVERS';
-    $mail->Body = 'Please find the attached invoice.'; // Adjust the email body as needed
-
-    $mail->send();
-    echo 'Message has been sent';
-    clearInvoicesFolder($invoicesDirectory);
-
-} catch (Exception $e) {
-    echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
-}
-
-    // Update the isConfirmed and isActive columns
-    $updateStmt = $conn->prepare("
+// Update the isConfirmed and isActive columns
+$updateStmt = $conn->prepare("
         UPDATE JobTimings jt
         JOIN Bookings b ON jt.BookingID = b.BookingID
         SET jt.isConfirmed = 1, b.isActive = 0
         WHERE b.BookingID = ?
     ");
-    $updateStmt->bind_param("i", $bookingID);
-    $updateStmt->execute();
-    $updateStmt->close();
+$updateStmt->bind_param("i", $bookingID);
+$updateStmt->execute();
+$updateStmt->close();
 
 header("Location: index.php");
