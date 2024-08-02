@@ -43,6 +43,9 @@
                                 <li class="nav-item">
                                     <a class="nav-link" href="customerSignatures.php">Customer Signatures</a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="customerInvoices.php">Customer Invoices</a>
+                                </li>
                             </ul>
                         </li>
                         <li class="nav-item">
