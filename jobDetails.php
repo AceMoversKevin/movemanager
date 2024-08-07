@@ -1,22 +1,16 @@
 <?php
 session_start();
-// Include db.php for database connection
 require 'db.php';
 
-// Set up custom error logging to notification_log
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/notification_log');
 
-// Check if the user is logged in, otherwise redirect to login page
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['role'] != 'SuperAdmin')) {
     header("Location: login.php");
     exit;
 }
 
-// Fetch the booking ID from the URL
 $bookingID = isset($_GET['BookingID']) ? intval($_GET['BookingID']) : 0;
-
-// Initialize an empty array for job details
 $jobDetails = [];
 
 if ($bookingID > 0) {
@@ -156,10 +150,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['notifyEmployees'])) {
     }
     $stmt->close();
 
-    $apiKey = '<Add key in prod>'; // Replace with your SMTP2GO API key
+    $apiKey = '<Add API Key in production';
     $recipientEmails = explode(', ', $jobDetails['EmployeeEmails']);
-    $senderEmail = 'aaron@acemovers.com.au'; // Replace with your sender email
-    $senderName = 'Aaron Miller'; // Replace with your sender name
+    $senderEmail = 'aaron@acemovers.com.au';
+    $senderName = 'Aaron Miller';
     $subject = 'Job Assignment Notification';
 
     $body = <<<EOT
@@ -178,13 +172,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['notifyEmployees'])) {
 <p><strong>Pickup Location:</strong> {$jobDetails['PickupLocation']}</p>
 <p><strong>Dropoff Location:</strong> {$jobDetails['DropoffLocation']}</p>
 <p><strong>Truck Size:</strong> {$jobDetails['TruckSize']}</p>
-<p><strong>Callout Fee:</strong> \${$jobDetails['CalloutFee']}</p>
+<p><strong>Callout Fee:</strong> {$jobDetails['CalloutFee']} hours</p>
 <p><strong>Rate:</strong> \${$jobDetails['Rate']}</p>
 <p><strong>Deposit:</strong> \${$jobDetails['Deposit']}</p>
 <p><strong>Assigned Employees:</strong> {$jobDetails['EmployeeNames']}</p>
+<p>To accept this shift please login to your Employee portal <a href="https://movers.alphamovers.com.au/">https://movers.alphamovers.com.au/</a></p>
 </body>
 </html>
 EOT;
+
 
     foreach ($recipientEmails as $recipientEmail) {
         $data = [
@@ -235,18 +231,25 @@ function isGSTIncluded($gstValue)
     return $gstValue == 1;
 }
 
+$employees = [];
+$employeesQuery = "SELECT PhoneNo, Name, EmployeeType FROM Employees WHERE isActive = 1";
+$employeesResult = $conn->query($employeesQuery);
+if ($employeesResult->num_rows > 0) {
+    while ($employee = $employeesResult->fetch_assoc()) {
+        $employees[] = $employee;
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['updateEmployees'])) {
     $bookingID = $_POST['bookingID'];
     $employeePhoneNos = $_POST['employees'];
 
-    // Delete existing assignments
     $deleteQuery = "DELETE FROM BookingAssignments WHERE BookingID = ?";
     $stmt = $conn->prepare($deleteQuery);
     $stmt->bind_param("i", $bookingID);
     $stmt->execute();
     $stmt->close();
 
-    // Insert new assignments
     $insertQuery = "INSERT INTO BookingAssignments (BookingID, EmployeePhoneNo) VALUES (?, ?)";
     $stmt = $conn->prepare($insertQuery);
     foreach ($employeePhoneNos as $phoneNo) {
@@ -255,7 +258,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['updateEmployees'])) {
     }
     $stmt->close();
 
-    // Redirect to the same page to show updated employees
     header("Location: jobDetails.php?BookingID=$bookingID");
     exit;
 }
@@ -473,23 +475,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['updateEmployees'])) {
                     formData.append('employees[]', phoneNo);
                 });
 
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', 'jobDetails.php?BookingID=<?php echo $bookingID; ?>', true);
-
-                xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        console.log('Response from server:', xhr.responseText);
-                        location.reload();
-                    } else {
-                        console.error('Error from server:', xhr.responseText);
-                    }
-                };
-
-                xhr.onerror = function() {
-                    console.error('Network error.');
-                };
-
-                xhr.send(formData);
+                fetch('update-booking-employees.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.text())
+                    .then(data => {
+                        console.log('Response from server:', data);
+                        if (data.includes('successfully')) {
+                            location.reload();
+                        } else {
+                            console.error('Error from server:', data);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Network error:', error);
+                    });
             }
         });
     </script>
