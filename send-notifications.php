@@ -1,10 +1,5 @@
 <?php
 require_once 'db.php'; // Include your database connection
-require_once 'PHPMailer-master/src/PHPMailer.php'; // Adjust the path 
-require_once 'PHPMailer-master/src/SMTP.php'; // Adjust the path 
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $bookingID = $_POST['bookingID'] ?? 0;
@@ -45,34 +40,16 @@ GROUP BY
         $jobDetails = $result->fetch_assoc();
     }
     $stmt->close();
-    // Prepare and execute statement...
-    // Assume $jobDetails contains all the fetched data
 
-    // Prepare PHPMailer
-    $mail = new PHPMailer(true);
+    // SMTP2GO Email API details
+    $apiKey = '<Add key in prod>'; // Replace with your SMTP2GO API key
+    $recipientEmails = explode(', ', $jobDetails['EmployeeEmails']);
+    $senderEmail = 'aaron@acemovers.com.au'; // Replace with your sender email
+    $senderName = 'Aaron Miller'; // Replace with your sender name
+    $subject = 'Job Assignment Notification';
 
-    try {
-        //Server settings
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.elasticemail.com'; // Set the SMTP server to send through
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'aaron@acemovers.com.au'; // SMTP username
-        $mail->Password = '8F1E23DEE343B60A0336456A6944E7B4F7DA';
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
-
-        //Recipients
-        $mail->setFrom('aaron@acemovers.com.au', 'Ace Movers');
-        $employeeEmails = explode(', ', $jobDetails['EmployeeEmails']);
-        foreach ($employeeEmails as $email) {
-            $mail->addAddress($email); // Add a recipient
-        }
-
-        // Content
-        $mail->isHTML(true); // Set email format to HTML
-        $mail->Subject = 'Job Assignment Notification';
-        // Construct email body
-        $mail->Body    = <<<EOT
+    // Construct email body
+    $body = <<<EOT
 <html>
 <head>
 <title>Job Assignment Notification</title>
@@ -96,9 +73,40 @@ GROUP BY
 </html>
 EOT;
 
-        $mail->send();
-        echo 'Message has been sent';
-    } catch (Exception $e) {
-        echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+    // Send the email using SMTP2GO Email API
+    foreach ($recipientEmails as $recipientEmail) {
+        $data = [
+            'api_key' => $apiKey,
+            'to' => [
+                $recipientEmail
+            ],
+            'sender' => $senderEmail,
+            'subject' => $subject,
+            'html_body' => $body
+        ];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://api.smtp2go.com/v3/email/send');
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'X-Smtp2go-Api-Key: ' . $apiKey
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        $responseData = json_decode($response, true);
+
+        // Log the JSON response to the error log
+        error_log('SMTP2GO API Response: ' . json_encode($responseData));
+
+        if (isset($responseData['data']['succeeded']) && $responseData['data']['succeeded'] > 0) {
+            error_log('Message has been sent to ' . $recipientEmail);
+        } else {
+            error_log('Message was not sent to ' . $recipientEmail . '. Error: ' . ($responseData['data']['errors'][0]['message'] ?? 'Unknown error'));
+        }
     }
 }

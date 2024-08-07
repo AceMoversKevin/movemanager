@@ -19,7 +19,7 @@ SELECT
     b.MovingDate,
     b.PickupLocation,
     b.DropoffLocation,
-    GROUP_CONCAT(e.Name ORDER BY e.Name SEPARATOR ', ') AS EmployeeNames,
+    GROUP_CONCAT(CONCAT(e.Name, '|', ba.isAccepted) ORDER BY e.Name SEPARATOR ',') AS EmployeeNamesStatus,
     MAX(jt.StartTime) AS JobStartTime,
     MAX(jt.EndTime) AS JobEndTime,
     MAX(jt.TotalTime) AS JobTotalTime,
@@ -288,6 +288,37 @@ while ($row = $averageBookingDurationResult->fetch_assoc()) {
             font-size: 20px;
         }
     </style>
+
+    <style>
+        .employee-container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .employee-name-status {
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+            margin-bottom: 5px;
+            /* Optional, for spacing in case of wrapping */
+        }
+
+        .status-circle {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 5px;
+        }
+
+        .accepted {
+            background-color: green;
+        }
+
+        .not-accepted {
+            background-color: red;
+        }
+    </style>
 </head>
 
 <body>
@@ -334,7 +365,7 @@ while ($row = $averageBookingDurationResult->fetch_assoc()) {
                                 $progressClass = 'quarter';
                             }
 
-                            $employeeNames = explode(', ', $row['EmployeeNames']);
+                            $employeeNamesStatus = explode(',', $row['EmployeeNamesStatus']);
                             ?>
                             <div class="col-md-4">
                                 <div class="card mb-4 shadow-sm" onclick="window.location.href='emulatedDetailsPage.php?bookingID=<?= $row['BookingID'] ?>'">
@@ -342,9 +373,15 @@ while ($row = $averageBookingDurationResult->fetch_assoc()) {
                                         <h5 class="card-title"><?= htmlspecialchars($row["BookingName"]) ?> from <?= htmlspecialchars($row["PickupLocation"]) ?> to <?= htmlspecialchars($row["DropoffLocation"]) ?></h5>
                                         <div class="employee-list">
                                             <strong>Employees:</strong>
-                                            <?php foreach ($employeeNames as $name) : ?>
-                                                <span><?= htmlspecialchars($name) ?></span>
-                                            <?php endforeach; ?>
+                                            <div class="employee-container">
+                                                <?php foreach ($employeeNamesStatus as $employeeStatus) : ?>
+                                                    <?php list($name, $isAccepted) = explode('|', $employeeStatus); ?>
+                                                    <span class="employee-name-status">
+                                                        <?= htmlspecialchars($name) ?>
+                                                        <span class="status-circle <?= $isAccepted == 1 ? 'accepted' : 'not-accepted' ?>"></span>
+                                                    </span>
+                                                <?php endforeach; ?>
+                                            </div>
                                         </div>
                                         <div class="progress-circle <?= $progressClass ?>">
                                             <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="80" height="80">
