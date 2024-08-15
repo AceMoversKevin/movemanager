@@ -9,6 +9,8 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
     exit;
 }
 
+$IsCardPayment = isset($_SESSION['IsCardPayment']) ? $_SESSION['IsCardPayment'] : 1;
+
 // Fetch job details from the database
 if (isset($_GET['bookingID'])) {
     $bookingID = intval($_GET['bookingID']);
@@ -38,12 +40,25 @@ if (isset($_GET['bookingID'])) {
 
         $subTotal = calculateSubTotal($row['TotalLaborTime'], $row['Rate'], $row['CalloutFee']);
         $jobDetails['SubTotal'] = $subTotal;
+
         // Determine GST percentage
         $gstIncluded = isGSTIncluded($row['GST']);
         $gstPercentage = $gstIncluded ? '10%' : '0%';
-        // Calculate the surcharge
+
+        // Calculate the GST surcharge
         $surcharge = ($row['GST'] == 1) ? $subTotal * 0.10 : 0;
         $jobDetails['Surcharge'] = $surcharge;
+
+        // Calculate card surcharge (2.2% of subtotal)
+        $cardSurcharge = $subTotal * 0.022;
+        $jobDetails['CardSurcharge'] = $cardSurcharge;
+
+        // Calculate total with card surcharge
+        $totalCharge = $jobDetails['TotalCharge'];
+        $totalWithCardSurcharge = ceil($totalCharge + $jobDetails['CardSurcharge']);
+
+        $jobDetails['TotalWithCardSurcharge'] = $totalWithCardSurcharge;
+
         // Check if there are any additional charges
         $hasAdditionalCharges = ($row['StairCharges'] != 0 || $row['PianoCharge'] != 0 || $row['PoolTableCharge'] != 0);
     }
@@ -63,7 +78,7 @@ function isGSTIncluded($gstValue)
     return $gstValue == 1;
 }
 
-// Check if the complete button has been pressed
+// Check if the Alt complete button has been pressed
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeAltJob'])) {
     // Update the isConfirmed and isActive columns
     $updateStmt = $conn->prepare("
@@ -96,7 +111,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeAltJob'])) {
     <style scoped>
         .invoice-container {
             overflow-y: auto;
-            /* Enable scrolling for content overflow */
         }
 
         .invoice-box {
@@ -116,7 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeAltJob'])) {
             line-height: inherit;
             text-align: left;
             border-collapse: collapse;
-            /* Remove default table spacing */
         }
 
         .invoice-box table td {
@@ -153,28 +166,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeAltJob'])) {
 
         .top .title {
             width: 20%;
-            /* Adjust as needed */
             display: inline-block;
             vertical-align: middle;
         }
 
         .top .invoice-details {
             width: 80%;
-            /* Adjust as needed */
             display: inline-block;
             vertical-align: middle;
         }
 
         .invoice-box table tr.top table td.title img {
             width: 100px;
-            /* Adjust logo size as needed */
             max-width: 100%;
-            /* Ensure the logo scales down on small screens */
         }
 
         .invoice-box table tr.information table td {
             padding-bottom: 20px;
-            /* Reduced for better fit */
         }
 
         .invoice-box table tr.heading td {
@@ -197,12 +205,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeAltJob'])) {
         }
 
         .invoice-box p {
-            /* Style for the "For any queries..." paragraph */
             font-size: 12px;
             margin-top: 10px;
         }
 
-        /* Responsive Styles */
         @media only screen and (max-width: 600px) {
             .invoice-box {
                 font-size: 12px;
@@ -214,13 +220,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeAltJob'])) {
                 display: block;
                 text-align: center;
             }
-
-            /* Additional adjustments for smaller screens */
         }
 
         .payment-options-container {
             margin-top: 20px;
-            /* Space the payment container from the invoice */
         }
 
         .payment-option {
@@ -229,26 +232,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeAltJob'])) {
 
         .payment-details {
             display: none;
-            /* Hide by default */
             margin-top: 10px;
         }
 
         .payment-option input[type="radio"]:checked+label+.payment-details {
             display: block;
-            /* Show when option is selected */
         }
 
-        /* Mock Stripe element (basic styling) */
-        #mock-stripe-element {
-            border: 1px solid #ccc;
-            padding: 10px;
+        .continue-to-stripe {
+            background-color: purple;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            display: block;
+            margin-top: 20px;
         }
 
-        #mock-stripe-element input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px solid #ccc;
+        .continue-to-stripe:hover {
+            background-color: darkviolet;
+        }
+
+        .generate-pdf-button {
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -307,7 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeAltJob'])) {
                                         <tr>
                                             <td>
                                                 ACE MOVERS PTY LTD.<br />
-                                                ACN:640 368 930
+                                                ABN:34 640 368 930
                                             </td>
                                             <td>
                                                 Client Name: <?= htmlspecialchars($jobDetails['BookingName']) ?><br />
@@ -344,7 +351,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeAltJob'])) {
                                 <td><?php echo $gstPercentage; ?></td>
                             </tr>
                             <tr class="item">
-                                <td>Surcharge</td>
+                                <td>GST Surcharge</td>
                                 <td>$<?php echo number_format($jobDetails['Surcharge'], 2); ?></td>
                             </tr>
                             <?php if ($hasAdditionalCharges) : ?>
@@ -379,73 +386,88 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeAltJob'])) {
                             </tr>
                             <tr class="total">
                                 <td></td>
-                                <td><b>Total: $<?= htmlspecialchars($jobDetails['TotalCharge']) ?></b></td>
+                                <td>
+                                    <b>Total:
+                                        <?php if ($IsCardPayment == 1) : ?>
+                                            $<?= htmlspecialchars($jobDetails['TotalWithCardSurcharge']) ?>
+                                            <span>(includes 2.2% surcharge of $<?= htmlspecialchars(number_format($jobDetails['CardSurcharge'], 2)) ?>)</span>
+                                        <?php else : ?>
+                                            $<?= htmlspecialchars($jobDetails['TotalCharge']) ?>
+                                        <?php endif; ?>
+                                    </b>
+                                </td>
                             </tr>
                         </table>
                         <p>For any queries please contact us at info@acemovers.com.au or call us at 1300 136 735</p>
                     </div>
                 </div>
 
+
                 <div class="options-container">
 
                     <h3>Payment Options</h3>
-                    <?php if ($gstIncluded) : ?>
-                        <div class="payment-option">
-                            <input type="radio" id="card" name="payment" checked>
-                            <label for="card">Card</label>
-                            <div class="payment-details">
-                                <div id="mock-stripe-element">
-                                    Amount
-                                    <input type="text" placeholder="$">
-                                    Card Number
-                                    <input type="text" placeholder="**** **** **** ****"><br>
-                                    Expiration
-                                    <input type="text" placeholder="MM / YY">
-                                    <input type="text" placeholder="CVC">
+                    <form method="post" id="paymentForm">
+                        <input type="hidden" id="isCardPayment" name="isCardPayment" value="1">
+                        <?php if ($gstIncluded) : ?>
+                            <div class="payment-option">
+                                <input type="radio" id="card" name="paymentMethod" value="card" <?= isset($_SESSION['IsCardPayment']) && $_SESSION['IsCardPayment'] == 1 ? 'checked' : '' ?>>
+                                <label for="card">Card</label>
+                                <div class="payment-details">
+                                    <button class="continue-to-stripe" onclick="event.preventDefault(); redirectToStripe('<?= $jobDetails['BookingID'] ?>', '<?= $jobDetails['BookingName'] ?>', '<?= $jobDetails['Email'] ?>', '<?= urlencode($jobDetails['TotalWithCardSurcharge']) ?>')">Continue to Stripe for Payment</button>
                                 </div>
                             </div>
-                        </div>
-                    <?php endif; ?>
+                        <?php endif; ?>
 
-                    <div class="payment-option">
-                        <input type="radio" id="cash" name="payment">
-                        <label for="cash">Cash</label>
-                        <div class="payment-details">
-                            <p>Instructions for cash payment (expandable)</p>
-                        </div>
+                        <!-- <div class="payment-option">
+                    <input type="radio" id="cash" name="paymentMethod" value="cash" <?= isset($_SESSION['IsCardPayment']) && $_SESSION['IsCardPayment'] == 0 ? 'checked' : '' ?>>
+                    <label for="cash">Cash</label>
+                    <div class="payment-details">
+                        <p>Please provide the amount of $<?= htmlspecialchars($jobDetails['TotalCharge']) ?></p>
                     </div>
+                </div> -->
 
-                    <?php if ($gstIncluded) : ?>
-                        <div class="payment-option">
-                            <input type="radio" id="bank-transfer" name="payment">
-                            <label for="bank-transfer">Bank Transfer</label>
-                            <div class="payment-details">
-                                <p>Bank transfer details (expandable)</p>
+                        <?php if ($gstIncluded) : ?>
+                            <div class="payment-option">
+                                <input type="radio" id="bank-transfer" name="paymentMethod" value="bank-transfer" <?= isset($_SESSION['IsCardPayment']) && $_SESSION['IsCardPayment'] == 0 ? 'checked' : '' ?>>
+                                <label for="bank-transfer">Bank Transfer</label>
+                                <div class="payment-details">
+                                    <p>Please transfer over $<?= htmlspecialchars($jobDetails['TotalCharge']) ?> to the following bank account:</p>
+                                    <ul>
+                                        <li>BSB: 033-686</li>
+                                        <li>Account Number: 673226</li>
+                                        <li>Account Name: ACE MOVERS</li>
+                                    </ul>
+                                </div>
                             </div>
-                        </div>
-                    <?php else : ?>
-                        <div class="payment-option">
-                            <input type="radio" id="bank-transfer" name="payment">
-                            <label for="bank-transfer">PayID</label>
-                            <div class="payment-details">
-                                <p>Bank transfer details (expandable)</p>
+                        <?php else : ?>
+                            <div class="payment-option">
+                                <input type="radio" id="bank-transfer" name="paymentMethod" value="bank-transfer" <?= isset($_SESSION['IsCardPayment']) && $_SESSION['IsCardPayment'] == 0 ? 'checked' : '' ?>>
+                                <label for="bank-transfer">PayID</label>
+                                <div class="payment-details">
+                                    <p>Please transfer over $<?= htmlspecialchars($jobDetails['TotalCharge']) ?> to the following bank account:</p>
+                                    <ul>
+                                        <li>BSB: 033-686</li>
+                                        <li>Account Number: 673226</li>
+                                        <li>Account Name: ACE MOVERS</li>
+                                    </ul>
+                                </div>
                             </div>
-                        </div>
-                    <?php endif; ?>
+                        <?php endif; ?>
+                        <?php if (!$gstIncluded) : ?>
+                            <p>This customer will not receive an invoice</p>
+                            <button type="button" id="completeAltJobButton" class="btn btn-warning btn-block">Complete</button>
+                        <?php endif; ?>
+                    </form>
                 </div>
+
                 <?php if ($gstIncluded) : ?>
                     <div class="generate-pdf-button">
-                        <button type="button" name="generatePdfButton" onclick="redirectToInvoice(<?= $jobDetails['BookingID'] ?>)" class="btn btn-success btn-block">Complete</button>
+                        <button type="button" id="completeCardPayment" class="btn btn-success btn-block" onclick="redirectToInvoiceCard(<?= $jobDetails['BookingID'] ?>)" style="display: none;">Complete Card Payment</button>
+                        <button type="button" id="completePayment" class="btn btn-info btn-block" onclick="redirectToInvoice(<?= $jobDetails['BookingID'] ?>)" style="display: none;">Complete Payment</button>
                     </div>
-                <?php else : ?>
-                    <form method="post">
-                        <p>This customer will not recieve an invoice</p>
-                        <button type="submit" name="completeAltJob" class="btn btn-warning btn-block">Complete</button>
-                    </form>
                 <?php endif; ?>
+            </main>
         </div>
-        </main>
-    </div>
     </div>
 
     <!-- Bootstrap JS, Popper.js, and jQuery -->
@@ -453,8 +475,81 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeAltJob'])) {
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const paymentOptions = document.querySelectorAll('input[name="paymentMethod"]');
+            const isCardPaymentInput = document.getElementById('isCardPayment');
+            const completeCardPaymentButton = document.getElementById('completeCardPayment');
+            const completePaymentButton = document.getElementById('completePayment');
+            const completeAltJobButton = document.getElementById('completeAltJobButton');
+
+            function togglePaymentButtons() {
+                const selectedPaymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+                if (selectedPaymentMethod === 'card') {
+                    completeCardPaymentButton.style.display = 'block';
+                    completePaymentButton.style.display = 'none';
+                } else {
+                    completeCardPaymentButton.style.display = 'none';
+                    completePaymentButton.style.display = 'block';
+                }
+            }
+
+            // Add the event listener for the Complete button
+            if (completeAltJobButton) {
+                completeAltJobButton.addEventListener('click', function() {
+                    // Make AJAX request to trigger the completeAltJob event
+                    const xhr = new XMLHttpRequest();
+                    xhr.open("POST", window.location.href, true);
+                    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            console.log('ALT job completed');
+                            window.location.href = 'index.php'; // Redirect after completion
+                        }
+                    };
+                    xhr.send("completeAltJob=1"); // Send the completeAltJob request
+                });
+            }
+
+            paymentOptions.forEach(option => {
+                option.addEventListener('change', function() {
+                    if (this.id === 'card') {
+                        isCardPaymentInput.value = '1';
+                    } else {
+                        isCardPaymentInput.value = '0';
+                    }
+
+                    // Update button visibility immediately
+                    togglePaymentButtons();
+
+                    // Make AJAX request to update PHP variable
+                    const xhr = new XMLHttpRequest();
+                    xhr.open("POST", window.location.href, true);
+                    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            console.log('PHP variable updated');
+                            location.reload(); // Reload the page after the variable is updated
+                        }
+                    };
+                    xhr.send("isCardPayment=" + isCardPaymentInput.value);
+                });
+            });
+
+            // Initial toggle based on the current value
+            togglePaymentButtons();
+        });
+
         function redirectToInvoice(bookingID) {
             window.location.href = 'generate_invoice.php?bookingID=' + bookingID;
+        }
+
+        function redirectToInvoiceCard(bookingID) {
+            window.location.href = 'generate_invoice_card.php?bookingID=' + bookingID;
+        }
+
+        function redirectToStripe(bookingID, bookingName, bookingEmail, totalCharge) {
+            const stripeUrl = `https://jn8op1ai150.typeform.com/to/WR3oN0Ej#booking_id=${encodeURIComponent(bookingID)}&email=${encodeURIComponent(bookingEmail)}&name=${encodeURIComponent(bookingName)}&amount=${encodeURIComponent(totalCharge)}`;
+            window.open(stripeUrl, '_blank');
         }
     </script>
 
