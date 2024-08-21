@@ -107,6 +107,19 @@
                                     </li>
                                 </ul>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#marketingSubmenu" data-toggle="collapse" aria-expanded="false">
+                                    SMS Marketing Campaign
+                                </a>
+                                <ul class="collapse list-unstyled sub-menu" id="marketingSubmenu">
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="marketingCampaign.php">Marketing</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#">Data Sanitization and Testing</a>
+                                    </li>
+                                </ul>
+                            </li>
                         <?php endif; ?>
 
                         <li class="nav-item">
