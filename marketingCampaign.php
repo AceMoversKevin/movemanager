@@ -17,7 +17,7 @@ function log_message($message)
     file_put_contents($logFile, "[$current_time] $message" . PHP_EOL, FILE_APPEND);
 }
 
-// *** Non-functional code start - Complex Key Generation ***
+// *** Complex Key Generation ***
 function generateComplexKey($length = 32)
 {
     $random_data = openssl_random_pseudo_bytes($length);
@@ -42,9 +42,9 @@ function randomString($length = 12)
     }
     return $randomString;
 }
-// *** Non-functional code end ***
+// *** code end ***
 
-// *** Non-functional code start - Encoding and Decoding ***
+// *** Encoding and Decoding ***
 function encodeText($text)
 {
     // Adding multiple layers of encoding
@@ -67,9 +67,9 @@ function decodeText($encodedText)
 
     return $decodedText;
 }
-// *** Non-functional code end ***
+// *** code end ***
 
-// *** Non-functional code start - Encryption and Decryption ***
+// *** Encryption and Decryption ***
 function encryptText($plainText, $key)
 {
     $cipher = 'aes-256-cbc';
@@ -95,7 +95,7 @@ function decryptText($encryptedText, $key)
     $decryptedText = openssl_decrypt($encryptedText, $cipher, $key, 0, $iv);
     return $decryptedText;
 }
-// *** Non-functional code end ***
+// *** code end ***
 
 // Check if the user is logged in, otherwise redirect to login page
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['role'] != 'SuperAdmin')) {
@@ -155,8 +155,8 @@ if (isset($_POST['new_template_name']) && isset($_POST['new_template_body'])) {
 }
 
 // Twilio credentials
-$sid    = "AC42e31fbf889d09aec2be9f5c5d1fc1fe";
-$token  = "6400ece144458c1b4ecf791672b0b8b5";
+$sid    = "[SID]";
+$token  = "{token}";
 $twilio = new Client($sid, $token);
 
 // *** Non-functional code start - Key and Encryption Usage ***
@@ -210,7 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && isset(
                 $message = $twilio->messages->create(
                     $phone_number, // to
                     array(
-                        "messagingServiceSid" => "MGa2ef1b7529532b7c609a27cae5c6a441", // Your messaging service SID
+                        "messagingServiceSid" => "[MSID]", // Your messaging service SID
                         "body" => $message_body
                     )
                 );
