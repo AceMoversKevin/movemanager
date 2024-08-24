@@ -149,8 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['notifyEmployees'])) {
         $jobDetails = $result->fetch_assoc();
     }
     $stmt->close();
-
-    $apiKey = '<Add API Key in production';
+// Add key in prod
+    $apiKey = '{add in prod}'; 
     $recipientEmails = explode(', ', $jobDetails['EmployeeEmails']);
     $senderEmail = 'aaron@acemovers.com.au';
     $senderName = 'Aaron Miller';
