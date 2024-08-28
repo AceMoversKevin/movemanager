@@ -149,8 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['notifyEmployees'])) {
         $jobDetails = $result->fetch_assoc();
     }
     $stmt->close();
-// Add key in prod
-    $apiKey = '{add in prod}'; 
+    // Add key in prod
+    $apiKey = '{add in prod}';
     $recipientEmails = explode(', ', $jobDetails['EmployeeEmails']);
     $senderEmail = 'aaron@acemovers.com.au';
     $senderName = 'Aaron Miller';
@@ -162,21 +162,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['notifyEmployees'])) {
 <title>Job Assignment Notification</title>
 </head>
 <body>
-<h1>Job Assignment Details</h1>
-<p><strong>Booking Name:</strong> {$jobDetails['BookingName']}</p>
-<p><strong>Email:</strong> {$jobDetails['BookingEmail']}</p>
-<p><strong>Phone:</strong> {$jobDetails['BookingPhone']}</p>
-<p><strong>Bedrooms:</strong> {$jobDetails['Bedrooms']}</p>
-<p><strong>Moving Date:</strong> {$jobDetails['MovingDate']}</p>
-<p><strong>Time Slot:</strong> {$jobDetails['TimeSlot']}</p>
-<p><strong>Pickup Location:</strong> {$jobDetails['PickupLocation']}</p>
-<p><strong>Dropoff Location:</strong> {$jobDetails['DropoffLocation']}</p>
-<p><strong>Truck Size:</strong> {$jobDetails['TruckSize']}</p>
-<p><strong>Callout Fee:</strong> {$jobDetails['CalloutFee']} hours</p>
-<p><strong>Rate:</strong> \${$jobDetails['Rate']}</p>
-<p><strong>Deposit:</strong> \${$jobDetails['Deposit']}</p>
-<p><strong>Assigned Employees:</strong> {$jobDetails['EmployeeNames']}</p>
-<p>To accept this shift please login to your Employee portal <a href="https://movers.alphamovers.com.au/">https://movers.alphamovers.com.au/</a></p>
+<h1>Job Assignment</h1>
+<p>A job has been assigned to you, please login to check details.  movers.alphamovers.com.au</p>
 </body>
 </html>
 EOT;
