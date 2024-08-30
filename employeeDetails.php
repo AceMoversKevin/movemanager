@@ -62,7 +62,8 @@ $result = $conn->query($query);
                             <th>Pay Rate</th>
                             <th>ABN</th>
                             <th>GST</th>
-                            <th>Action</th>
+                            <th>Edit</th>
+                            <th>Job History</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -79,6 +80,7 @@ $result = $conn->query($query);
                                 echo "<td>" . htmlspecialchars($row["ABN"]) . "</td>";
                                 echo "<td>" . htmlspecialchars($row["GST"]) . "</td>";
                                 echo "<td><a href='editEmployee.php?PhoneNo=" . htmlspecialchars($row["PhoneNo"]) . "' class='btn btn-warning btn-sm'>Edit</a></td>";
+                                echo "<td><a href='shiftHistory.php?PhoneNo=" . htmlspecialchars($row["PhoneNo"]) . "' class='btn btn-info btn-sm'>History</a></td>";
                                 echo "</tr>";
                             }
                         } else {
