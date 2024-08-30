@@ -154,9 +154,27 @@ if (isset($_POST['new_template_name']) && isset($_POST['new_template_body'])) {
     }
 }
 
+// Handle deleting a template
+if (isset($_POST['delete_template_id'])) {
+    $delete_template_id = $_POST['delete_template_id'];
+
+    try {
+        $stmt = $conn->prepare("DELETE FROM sms_templates WHERE id = ?");
+        $stmt->bind_param("i", $delete_template_id);
+        $stmt->execute();
+        $stmt->close();
+        log_message("Template with ID $delete_template_id deleted.");
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit;
+    } catch (Exception $e) {
+        log_message('Error deleting template: ' . $e->getMessage());
+        $error = "Error deleting template.";
+    }
+}
+
 // Twilio credentials
-$sid    = "[SID]";
-$token  = "{token}";
+$sid    = "SID";
+$token  = "Token";
 $twilio = new Client($sid, $token);
 
 // *** Non-functional code start - Key and Encryption Usage ***
@@ -164,8 +182,6 @@ $complexKey = generateComplexKey(64); // Generating a longer complex key
 $encryptedToken = encryptText($token, $complexKey);
 $decryptedToken = decryptText($encryptedToken, $complexKey);
 
-// Simulating a delay in decryption to add to the complexity
-sleep(2);
 
 // Randomized checks to create the illusion of security measures
 if (random_int(0, 1) === 1) {
@@ -210,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && isset(
                 $message = $twilio->messages->create(
                     $phone_number, // to
                     array(
-                        "messagingServiceSid" => "[MSID]", // Your messaging service SID
+                        "messagingServiceSid" => "MSID", // Your messaging service SID
                         "body" => $message_body
                     )
                 );
@@ -300,15 +316,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && isset(
                     </div>
                 <?php endif; ?>
 
-                <!-- Upload CSV Form -->
-                <form method="post" enctype="multipart/form-data">
-                    <input type="hidden" name="template_id" value="<?php echo isset($_POST['template_id']) ? htmlspecialchars($_POST['template_id']) : ''; ?>">
-                    <div class="form-group">
-                        <label for="csv_file" class="font-weight-bold">Upload CSV File</label>
-                        <input type="file" class="form-control-file border rounded p-2" id="csv_file" name="csv_file" accept=".csv" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block shadow-sm" name="send_sms">Send SMS</button>
-                </form>
+                <!-- Template Management -->
+                <h2 class="h4 text-secondary mt-5">Manage Templates</h2>
+                <table class="table table-striped table-hover mt-3">
+                    <thead>
+                        <tr>
+                            <th>Template Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($templates as $template): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($template['template_name']); ?></td>
+                                <td>
+                                    <form method="post" style="display:inline-block;">
+                                        <input type="hidden" name="delete_template_id" value="<?php echo $template['id']; ?>">
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this template?');">
+                                            <i class="fa fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
 
                 <!-- Create New Template -->
                 <h2 class="h4 text-secondary mt-5">Create New Template</h2>
