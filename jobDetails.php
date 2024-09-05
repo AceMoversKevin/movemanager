@@ -149,8 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['notifyEmployees'])) {
         $jobDetails = $result->fetch_assoc();
     }
     $stmt->close();
-    // Add key in prod
-    $apiKey = '{add in prod}';
+
+    $apiKey = 'API KEY';
     $recipientEmails = explode(', ', $jobDetails['EmployeeEmails']);
     $senderEmail = 'aaron@acemovers.com.au';
     $senderName = 'Aaron Miller';
@@ -225,28 +225,6 @@ if ($employeesResult->num_rows > 0) {
     while ($employee = $employeesResult->fetch_assoc()) {
         $employees[] = $employee;
     }
-}
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['updateEmployees'])) {
-    $bookingID = $_POST['bookingID'];
-    $employeePhoneNos = $_POST['employees'];
-
-    $deleteQuery = "DELETE FROM BookingAssignments WHERE BookingID = ?";
-    $stmt = $conn->prepare($deleteQuery);
-    $stmt->bind_param("i", $bookingID);
-    $stmt->execute();
-    $stmt->close();
-
-    $insertQuery = "INSERT INTO BookingAssignments (BookingID, EmployeePhoneNo) VALUES (?, ?)";
-    $stmt = $conn->prepare($insertQuery);
-    foreach ($employeePhoneNos as $phoneNo) {
-        $stmt->bind_param("is", $bookingID, $phoneNo);
-        $stmt->execute();
-    }
-    $stmt->close();
-
-    header("Location: jobDetails.php?BookingID=$bookingID");
-    exit;
 }
 ?>
 
