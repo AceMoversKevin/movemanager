@@ -33,8 +33,12 @@ if ($bookingID > 0) {
         b.StairCharges,
         b.PianoCharge,
         b.PoolTableCharge AS BookingPoolTableCharge,
+        
+        -- Employee information
         GROUP_CONCAT(DISTINCT e.Name ORDER BY e.Name SEPARATOR ', ') AS EmployeeNames,
         GROUP_CONCAT(DISTINCT e.Email ORDER BY e.Name SEPARATOR ', ') AS EmployeeEmails,
+        
+        -- JobTimings information
         MAX(jt.TimingID) AS TimingID,
         MAX(jt.StartTime) AS TimingStartTime,
         MAX(jt.EndTime) AS TimingEndTime,
@@ -42,6 +46,8 @@ if ($bookingID > 0) {
         MAX(jt.isComplete) AS TimingIsComplete,
         MAX(jt.BreakTime) AS TimingBreakTime,
         MAX(jt.isConfirmed) AS TimingIsConfirmed,
+        
+        -- JobCharges information
         MAX(jc.jobID) AS jobID,
         MAX(jc.TotalCharge) AS JobTotalCharge,
         MAX(jc.TotalLaborTime) AS JobTotalLaborTime,
@@ -52,7 +58,14 @@ if ($bookingID > 0) {
         MAX(jc.EndTime) AS JobEndTime,
         MAX(jc.Deposit) AS JobDeposit,
         MAX(jc.GST) AS JobGST,
-        MAX(jc.PoolTableCharge) AS JobPoolTableCharge
+        MAX(jc.PoolTableCharge) AS JobPoolTableCharge,
+        
+        -- TripDetails information
+        GROUP_CONCAT(DISTINCT CONCAT(td.TripNumber, ': ', td.StartTime, ' - ', td.EndTime) ORDER BY td.TripNumber SEPARATOR ', ') AS TripDetails,
+
+        -- PartialHours information
+        GROUP_CONCAT(DISTINCT CONCAT(e.Name, ': ', ph.StartTime, ' - ', ph.EndTime, ' (', ph.PartialHours, ' hrs)') ORDER BY e.Name SEPARATOR ', ') AS PartialHoursDetails
+    
     FROM 
         Bookings b
     JOIN 
@@ -63,9 +76,15 @@ if ($bookingID > 0) {
         JobTimings jt ON b.BookingID = jt.BookingID
     LEFT JOIN 
         JobCharges jc ON b.BookingID = jc.BookingID
+    LEFT JOIN 
+        TripDetails td ON b.BookingID = td.BookingID
+    LEFT JOIN 
+        PartialHours ph ON b.BookingID = ph.BookingID AND ph.PhoneNo = e.PhoneNo -- To link employee's partial hours to the booking
+
     WHERE 
         b.BookingID = ? AND
         b.BookingID NOT IN (SELECT BookingID FROM CompletedJobs)
+    
     GROUP BY 
         b.BookingID, 
         b.Name, 
