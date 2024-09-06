@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const newField = document.createElement('div');
         newField.classList.add('employee-assignment-field');
 
-        let selectHTML = `<select name="assignedEmployee" class="employee-select"> <option value="">Select an Employee</option>`;
+        let selectHTML = `<select name="assignedEmployee" class="employee-select form-control form-control-sm"> <option value="">Select an Employee</option>`;
         availableEmployees.forEach(function (employee) {
             selectHTML += `<option value="${employee.PhoneNo}">${employee.Name} (${employee.EmployeeType})</option>`;
         });
@@ -18,6 +18,13 @@ document.addEventListener('DOMContentLoaded', function () {
         newField.querySelector('.remove-field').addEventListener('click', function () {
             newField.remove();
         });
+    }
+
+    // Function to add two default employee assignment fields
+    function addDefaultEmployeeFields(bookingID) {
+        // Add two employee fields by default
+        addEmployeeField(bookingID);
+        addEmployeeField(bookingID);
     }
 
     // Function to confirm assignments
@@ -58,6 +65,101 @@ document.addEventListener('DOMContentLoaded', function () {
         xhr.send(data);
     }
 
+    // Handle quick-assign button clicks
+    document.querySelectorAll('.quick-assign').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const value = this.getAttribute('data-value');
+            const targetField = this.closest('p').querySelector('.editable');
+            const field = targetField.getAttribute('data-field');
+            const bookingId = targetField.getAttribute('data-id');
+
+            targetField.innerText = value;
+
+            // Update the database with the new value
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'update_booking.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    console.log('Updated successfully.');
+                } else {
+                    console.error('Error updating the record.');
+                }
+            };
+            xhr.send(`booking_id=${bookingId}&field=${field}&value=${encodeURIComponent(value)}`);
+        });
+    });
+
+    // Make modal fields editable
+    function makeFieldsEditable(bookingID) {
+        document.querySelectorAll(`#assignJobsModal${bookingID} .editable`).forEach(field => {
+            field.addEventListener('dblclick', function () {
+                var $td = this;
+                var originalValue = $td.innerText;
+                var field = $td.getAttribute('data-field');
+                var bookingId = $td.getAttribute('data-id');
+
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.value = originalValue !== 'Not assigned' ? originalValue : '';
+
+                input.addEventListener('blur', function () {
+                    var newValue = input.value.trim();
+                    $td.innerText = newValue !== '' ? newValue : 'Not assigned';
+
+                    // Update the database with the new value
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', 'update_booking.php', true);
+                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    xhr.onload = function () {
+                        if (xhr.status === 200) {
+                            console.log('Updated successfully.');
+                        } else {
+                            console.error('Error updating the record.');
+                        }
+                    };
+                    xhr.send(`booking_id=${bookingId}&field=${field}&value=${encodeURIComponent(newValue)}`);
+                });
+
+                input.addEventListener('keyup', function (e) {
+                    if (e.key === 'Enter') {
+                        input.blur();
+                    }
+                });
+
+                $td.innerHTML = '';
+                $td.appendChild(input);
+                input.focus();
+            });
+        });
+    }
+
+    // Initialize CKEditor for Additional Details rich text editor
+    function initializeRichTextEditor(bookingID) {
+        ClassicEditor.create(document.querySelector(`#additionalDetails${bookingID}`), {
+            toolbar: ['bold', 'italic', 'link', 'bulletedList', 'numberedList', 'undo', 'redo']
+        }).then(editor => {
+            editor.model.document.on('change:data', () => {
+                const newValue = editor.getData();
+                const bookingId = bookingID;
+
+                // Update the database with the new value
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', 'update_booking.php', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        console.log('Additional details updated successfully.');
+                    } else {
+                        console.error('Error updating additional details.');
+                    }
+                };
+                xhr.send(`booking_id=${bookingId}&field=AdditionalDetails&value=${encodeURIComponent(newValue)}`);
+            });
+        }).catch(error => {
+            console.error(error);
+        });
+    }
 
     // Event listeners for adding new employee fields
     document.querySelectorAll('.add-employee-btn').forEach(btn => {
@@ -73,5 +175,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const bookingID = this.dataset.bookingid;
             confirmAssignments(bookingID);
         });
+    });
+
+    // Initialize editable fields, CKEditor, and two default employee fields for each booking modal
+    document.querySelectorAll('.modal').forEach(modal => {
+        const bookingID = modal.getAttribute('id').replace('assignJobsModal', '');
+        makeFieldsEditable(bookingID);
+        initializeRichTextEditor(bookingID); // Initialize CKEditor for Additional Details
+        addDefaultEmployeeFields(bookingID); // Add two default employee fields
     });
 });
