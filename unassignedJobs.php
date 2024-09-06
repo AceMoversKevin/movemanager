@@ -24,7 +24,7 @@ $visibleColumns = isset($_GET['visible_columns']) ? (is_array($_GET['visible_col
 
 // Pagination parameters
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$recordsPerPage = 10;
+$recordsPerPage = 50;
 $offset = ($page - 1) * $recordsPerPage;
 
 // Base query to select bookings with less than 2 employees assigned
@@ -121,6 +121,9 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
+
+
     <style>
         .editable {
             cursor: pointer;
@@ -134,6 +137,21 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
             cursor: pointer;
             text-decoration: underline;
         }
+
+        .quick-assign-buttons {
+            margin-left: 20px;
+            /* Add a small gap between the field and the buttons */
+        }
+
+        .quick-assign-buttons button {
+            margin-left: 5px;
+            padding: 2px 6px;
+            font-size: 0.8rem;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
     </style>
 </head>
 
@@ -271,7 +289,7 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
                                     </td>
                                 </tr>
 
-                                <!-- Modal for assigning Employees -->
+                                <!-- Modal for assigning Employees and showing Booking Information -->
                                 <div class="modal fade" id="assignJobsModal<?= $row['BookingID'] ?>" tabindex="-1" role="dialog" aria-labelledby="modalLabel<?= $row['BookingID'] ?>" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered" role="document">
                                         <div class="modal-content">
@@ -282,7 +300,47 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
                                                 </button>
                                             </div>
                                             <div class="modal-body">
-                                                <!-- Here, you would show the assigned employees or a message indicating that there are none -->
+                                                <!-- Editable booking details -->
+                                                <p><strong>Name:</strong> <span class="editable" data-field="Name" data-id="<?= $row['BookingID'] ?>"><?= !empty($row['Name']) ? htmlspecialchars($row['Name']) : 'Not assigned' ?></span></p>
+                                                <p><strong>Email:</strong> <span class="editable" data-field="Email" data-id="<?= $row['BookingID'] ?>"><?= !empty($row['Email']) ? htmlspecialchars($row['Email']) : 'Not assigned' ?></span></p>
+                                                <p><strong>Phone:</strong> <span class="editable" data-field="Phone" data-id="<?= $row['BookingID'] ?>"><?= !empty($row['Phone']) ? htmlspecialchars($row['Phone']) : 'Not assigned' ?></span></p>
+                                                <p><strong>Bedrooms:</strong> <span class="editable" data-field="Bedrooms" data-id="<?= $row['BookingID'] ?>"><?= !empty($row['Bedrooms']) ? htmlspecialchars($row['Bedrooms']) : 'Not assigned' ?></span></p>
+
+                                                <!-- Truck Size Field with Quick Assign Buttons -->
+                                                <p><strong>Truck Size:</strong>
+                                                    <span class="editable" data-field="TruckSize" data-id="<?= $row['BookingID'] ?>"><?= !empty($row['TruckSize']) ? htmlspecialchars($row['TruckSize']) : 'Not assigned' ?></span>
+                                                    <span class="quick-assign-buttons" id="truckSizeQuickAssign<?= $row['BookingID'] ?>">
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="5">5</button>
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="8">8</button>
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="10">10</button>
+                                                    </span>
+                                                </p>
+
+                                                <!-- Callout Fee Field with Quick Assign Buttons -->
+                                                <p><strong>Callout Fee:</strong>
+                                                    <span class="editable" data-field="CalloutFee" data-id="<?= $row['BookingID'] ?>"><?= !empty($row['CalloutFee']) ? htmlspecialchars($row['CalloutFee']) : 'Not assigned' ?></span>
+                                                    <span class="quick-assign-buttons" id="calloutFeeQuickAssign<?= $row['BookingID'] ?>">
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="0.5">0.5</button>
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="1.0">1.0</button>
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="1.5">1.5</button>
+                                                    </span>
+                                                </p>
+
+                                                <!-- Rate Field with Quick Assign Buttons -->
+                                                <p><strong>Rate:</strong>
+                                                    <span class="editable" data-field="Rate" data-id="<?= $row['BookingID'] ?>"><?= !empty($row['Rate']) ? htmlspecialchars($row['Rate']) : 'Not assigned' ?></span>
+                                                    <span class="quick-assign-buttons" id="rateQuickAssign<?= $row['BookingID'] ?>">
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="130">130</button>
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="140">140</button>
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="150">150</button>
+                                                    </span>
+                                                </p>
+
+                                                <!-- Full Additional Details -->
+                                                <p><strong>Additional Details:</strong></p>
+                                                <textarea id="additionalDetails<?= $row['BookingID'] ?>" class="additional-details-editor"><?= !empty($row['AdditionalDetails']) ? htmlspecialchars($row['AdditionalDetails']) : 'Not assigned' ?></textarea>
+
+                                                <!-- Assigned Employees or no employees message -->
                                                 <?php if (count($assignedEmployees) > 0) : ?>
                                                     <p><strong>Assigned Employees:</strong></p>
                                                     <ul>
@@ -294,23 +352,19 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
                                                     <p>No assigned employees</p>
                                                 <?php endif; ?>
 
-                                                <div id="employeeFieldContainer<?= $row['BookingID'] ?>">
-
-                                                </div>
-
+                                                <!-- Container for adding more employee assignment fields -->
+                                                <div id="employeeFieldContainer<?= $row['BookingID'] ?>"></div>
                                             </div>
                                             <div class="modal-footer">
-                                                <!-- Button to add a new employee assignment field -->
                                                 <button type="button" class="btn btn-primary add-employee-btn" data-bookingid="<?= $row['BookingID'] ?>">Add Employee</button>
-                                                <!-- Button to confirm assignments -->
                                                 <button type="button" class="btn btn-success confirm-assignment-btn" data-bookingid="<?= $row['BookingID'] ?>">Confirm Assignment</button>
-                                                <!-- The footer can contain buttons like 'Save Changes' or 'Close' -->
                                                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+
+
 
                             <?php endwhile; ?>
                         </tbody>
