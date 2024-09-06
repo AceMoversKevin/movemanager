@@ -4,8 +4,8 @@ require 'db.php';
 
 // Check if the user is logged in, otherwise redirect to login page
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['role'] != 'SuperAdmin')) {
-header("Location: login.php");
-exit;
+    header("Location: login.php");
+    exit;
 }
 
 // Fetch sorting criteria from the query parameters
@@ -23,7 +23,7 @@ $allColumns = ['Name', 'Email', 'Phone', 'Bedrooms', 'BookingDate', 'MovingDate'
 $visibleColumns = isset($_GET['visible_columns']) ? (is_array($_GET['visible_columns']) ? $_GET['visible_columns'] : explode(',', $_GET['visible_columns'])) : $allColumns;
 
 // Handle pagination
-$itemsPerPage = 10; // Adjust this value as needed
+$itemsPerPage = 30; // Adjust this value as needed
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $itemsPerPage;
 
@@ -32,53 +32,53 @@ $query = "SELECT * FROM Bookings WHERE isActive = 1";
 
 // Add search term filtering
 if ($searchTerm) {
-$query .= " AND (Name LIKE '%$searchTerm%' OR Email LIKE '%$searchTerm%' OR Phone LIKE '%$searchTerm%' OR Bedrooms LIKE '%$searchTerm%' OR BookingDate LIKE '%$searchTerm%' OR MovingDate LIKE '%$searchTerm%' OR PickupLocation LIKE '%$searchTerm%' OR DropoffLocation LIKE '%$searchTerm%' OR TruckSize LIKE '%$searchTerm%' OR CalloutFee LIKE '%$searchTerm%' OR Rate LIKE '%$searchTerm%' OR Deposit LIKE '%$searchTerm%' OR TimeSlot LIKE '%$searchTerm%' OR AdditionalDetails LIKE '%$searchTerm%')";
+    $query .= " AND (Name LIKE '%$searchTerm%' OR Email LIKE '%$searchTerm%' OR Phone LIKE '%$searchTerm%' OR Bedrooms LIKE '%$searchTerm%' OR BookingDate LIKE '%$searchTerm%' OR MovingDate LIKE '%$searchTerm%' OR PickupLocation LIKE '%$searchTerm%' OR DropoffLocation LIKE '%$searchTerm%' OR TruckSize LIKE '%$searchTerm%' OR CalloutFee LIKE '%$searchTerm%' OR Rate LIKE '%$searchTerm%' OR Deposit LIKE '%$searchTerm%' OR TimeSlot LIKE '%$searchTerm%' OR AdditionalDetails LIKE '%$searchTerm%')";
 }
 
 // Add date filter
 if ($dateFilter) {
-switch ($dateFilter) {
-case 'today':
-$query .= " AND DATE(MovingDate) = CURDATE()";
-break;
-case 'next_day':
-$query .= " AND DATE(MovingDate) = CURDATE() + INTERVAL 1 DAY";
-break;
-case 'next_2_days':
-$query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 2 DAY";
-break;
-case 'next_3_days':
-$query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 3 DAY";
-break;
-case 'next_week':
-$query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 WEEK";
-break;
-case 'next_month':
-$query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 MONTH";
-break;
-case 'next_year':
-$query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 YEAR";
-break;
-case 'current_month':
-$query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE()) AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
-break;
-case 'last_month':
-$query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)";
-break;
-case 'current_year':
-$query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
-break;
-case 'last_year':
-$query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 YEAR)";
-break;
-case 'date_range':
-if ($startDate && $endDate) {
-$query .= " AND MovingDate BETWEEN '$startDate' AND '$endDate'";
-}
-break;
-default:
-break;
-}
+    switch ($dateFilter) {
+        case 'today':
+            $query .= " AND DATE(MovingDate) = CURDATE()";
+            break;
+        case 'next_day':
+            $query .= " AND DATE(MovingDate) = CURDATE() + INTERVAL 1 DAY";
+            break;
+        case 'next_2_days':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 2 DAY";
+            break;
+        case 'next_3_days':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 3 DAY";
+            break;
+        case 'next_week':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 WEEK";
+            break;
+        case 'next_month':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 MONTH";
+            break;
+        case 'next_year':
+            $query .= " AND DATE(MovingDate) BETWEEN CURDATE() AND CURDATE() + INTERVAL 1 YEAR";
+            break;
+        case 'current_month':
+            $query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE()) AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
+            break;
+        case 'last_month':
+            $query .= " AND MONTH(MovingDate) = MONTH(CURRENT_DATE() - INTERVAL 1 MONTH) AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 MONTH)";
+            break;
+        case 'current_year':
+            $query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE())";
+            break;
+        case 'last_year':
+            $query .= " AND YEAR(MovingDate) = YEAR(CURRENT_DATE() - INTERVAL 1 YEAR)";
+            break;
+        case 'date_range':
+            if ($startDate && $endDate) {
+                $query .= " AND MovingDate BETWEEN '$startDate' AND '$endDate'";
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 // Add sorting criteria to the query
@@ -146,6 +146,39 @@ $result = $conn->query($query);
         .read-less {
             cursor: pointer;
             color: blue;
+        }
+    </style>
+
+    <style>
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+            /* Allow horizontal scrolling if the pagination is too wide */
+            white-space: nowrap;
+            /* Prevent the pagination from wrapping to the next line */
+        }
+
+        .pagination-container::-webkit-scrollbar {
+            display: none;
+            /* Optional: Hide the scrollbar for better UX */
+        }
+
+        .pagination {
+            flex-wrap: nowrap;
+            /* Ensure pagination stays in one line */
+        }
+
+        .pagination-item {
+            min-width: 40px;
+            /* Ensures each pagination link has a minimum width */
+        }
+
+        @media (max-width: 768px) {
+            .pagination-item {
+                min-width: 30px;
+                /* Adjust for smaller screens */
+            }
         }
     </style>
 </head>
@@ -226,17 +259,18 @@ $result = $conn->query($query);
                             <tr>
                                 <th></th> <!-- New column for the button -->
                                 <?php if (in_array('Name', $visibleColumns)) : ?><th class="sortable" data-sort="Name">Name</th><?php endif; ?>
-                                <?php if (in_array('Email', $visibleColumns)) : ?><th class="sortable" data-sort="Email">Email</th><?php endif; ?>
-                                <?php if (in_array('Phone', $visibleColumns)) : ?><th class="sortable" data-sort="Phone">Phone</th><?php endif; ?>
                                 <?php if (in_array('Bedrooms', $visibleColumns)) : ?><th class="sortable" data-sort="Bedrooms">Bedrooms</th><?php endif; ?>
-                                <?php if (in_array('BookingDate', $visibleColumns)) : ?><th class="sortable" data-sort="BookingDate">Booking Date</th><?php endif; ?>
-                                <?php if (in_array('MovingDate', $visibleColumns)) : ?><th class="sortable" data-sort="MovingDate">Moving Date</th><?php endif; ?>
                                 <?php if (in_array('PickupLocation', $visibleColumns)) : ?><th class="sortable" data-sort="PickupLocation">Pickup Location</th><?php endif; ?>
                                 <?php if (in_array('DropoffLocation', $visibleColumns)) : ?><th class="sortable" data-sort="DropoffLocation">Dropoff Location</th><?php endif; ?>
                                 <?php if (in_array('TruckSize', $visibleColumns)) : ?><th class="sortable" data-sort="TruckSize">Truck Size</th><?php endif; ?>
                                 <?php if (in_array('CalloutFee', $visibleColumns)) : ?><th class="sortable" data-sort="CalloutFee">Callout Fee</th><?php endif; ?>
                                 <?php if (in_array('Rate', $visibleColumns)) : ?><th class="sortable" data-sort="Rate">Rate</th><?php endif; ?>
                                 <?php if (in_array('Deposit', $visibleColumns)) : ?><th class="sortable" data-sort="Deposit">Deposit</th><?php endif; ?>
+                                <?php if (in_array('Email', $visibleColumns)) : ?><th class="sortable" data-sort="Email">Email</th><?php endif; ?>
+                                <?php if (in_array('Phone', $visibleColumns)) : ?><th class="sortable" data-sort="Phone">Phone</th><?php endif; ?>
+                                <!-- Remaining columns -->
+                                <?php if (in_array('BookingDate', $visibleColumns)) : ?><th class="sortable" data-sort="BookingDate">Booking Date</th><?php endif; ?>
+                                <?php if (in_array('MovingDate', $visibleColumns)) : ?><th class="sortable" data-sort="MovingDate">Moving Date</th><?php endif; ?>
                                 <?php if (in_array('TimeSlot', $visibleColumns)) : ?>
                                     <td class="editable-time" data-field="TimeSlot" data-id="<?= $row['BookingID'] ?>">
                                         <input type="time" class="form-control" value="<?= htmlspecialchars($row['TimeSlot']) ?>" readonly>
@@ -251,10 +285,18 @@ $result = $conn->query($query);
                                     <td>
                                         <a href="bookingsConnections.php?booking_id=<?= $row['BookingID'] ?>" class="btn btn-primary btn-sm">Check Connection</a>
                                     </td>
+                                    <!-- Adjust the order of corresponding data cells (td) -->
                                     <?php if (in_array('Name', $visibleColumns)) : ?><td class="editable" data-field="Name" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Name']) ?></td><?php endif; ?>
+                                    <?php if (in_array('Bedrooms', $visibleColumns)) : ?><td class="editable" data-field="Bedrooms" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Bedrooms']) ?></td><?php endif; ?>
+                                    <?php if (in_array('PickupLocation', $visibleColumns)) : ?><td class="editable" data-field="PickupLocation" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['PickupLocation']) ?></td><?php endif; ?>
+                                    <?php if (in_array('DropoffLocation', $visibleColumns)) : ?><td class="editable" data-field="DropoffLocation" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['DropoffLocation']) ?></td><?php endif; ?>
+                                    <?php if (in_array('TruckSize', $visibleColumns)) : ?><td class="editable" data-field="TruckSize" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['TruckSize']) ?></td><?php endif; ?>
+                                    <?php if (in_array('CalloutFee', $visibleColumns)) : ?><td class="editable" data-field="CalloutFee" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['CalloutFee']) ?></td><?php endif; ?>
+                                    <?php if (in_array('Rate', $visibleColumns)) : ?><td class="editable" data-field="Rate" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Rate']) ?></td><?php endif; ?>
+                                    <?php if (in_array('Deposit', $visibleColumns)) : ?><td class="editable" data-field="Deposit" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Deposit']) ?></td><?php endif; ?>
                                     <?php if (in_array('Email', $visibleColumns)) : ?><td class="editable" data-field="Email" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Email']) ?></td><?php endif; ?>
                                     <?php if (in_array('Phone', $visibleColumns)) : ?><td class="editable" data-field="Phone" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Phone']) ?></td><?php endif; ?>
-                                    <?php if (in_array('Bedrooms', $visibleColumns)) : ?><td class="editable" data-field="Bedrooms" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Bedrooms']) ?></td><?php endif; ?>
+                                    <!-- Remaining columns -->
                                     <?php if (in_array('BookingDate', $visibleColumns)) : ?>
                                         <td class="editable-date" data-field="BookingDate" data-id="<?= $row['BookingID'] ?>">
                                             <input type="date" class="form-control" value="<?= htmlspecialchars($row['BookingDate']) ?>" readonly>
@@ -265,12 +307,6 @@ $result = $conn->query($query);
                                             <input type="date" class="form-control" value="<?= htmlspecialchars($row['MovingDate']) ?>" readonly>
                                         </td>
                                     <?php endif; ?>
-                                    <?php if (in_array('PickupLocation', $visibleColumns)) : ?><td class="editable" data-field="PickupLocation" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['PickupLocation']) ?></td><?php endif; ?>
-                                    <?php if (in_array('DropoffLocation', $visibleColumns)) : ?><td class="editable" data-field="DropoffLocation" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['DropoffLocation']) ?></td><?php endif; ?>
-                                    <?php if (in_array('TruckSize', $visibleColumns)) : ?><td class="editable" data-field="TruckSize" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['TruckSize']) ?></td><?php endif; ?>
-                                    <?php if (in_array('CalloutFee', $visibleColumns)) : ?><td class="editable" data-field="CalloutFee" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['CalloutFee']) ?></td><?php endif; ?>
-                                    <?php if (in_array('Rate', $visibleColumns)) : ?><td class="editable" data-field="Rate" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Rate']) ?></td><?php endif; ?>
-                                    <?php if (in_array('Deposit', $visibleColumns)) : ?><td class="editable" data-field="Deposit" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Deposit']) ?></td><?php endif; ?>
                                     <?php if (in_array('TimeSlot', $visibleColumns)) : ?>
                                         <td class="editable-time" data-field="TimeSlot" data-id="<?= $row['BookingID'] ?>">
                                             <input type="time" class="form-control" value="<?= htmlspecialchars($row['TimeSlot']) ?>" readonly>
@@ -291,19 +327,43 @@ $result = $conn->query($query);
                 </div>
 
                 <!-- Pagination -->
-                <nav aria-label="Page navigation example">
-                    <ul class="pagination justify-content-center">
-                        <?php if ($page > 1) : ?>
-                            <li class="page-item"><a class="page-link" href="?page=<?= $page - 1 ?>&sort_column=<?= htmlspecialchars($sortColumn) ?>&sort_order=<?= htmlspecialchars($sortOrder) ?>&search=<?= htmlspecialchars($searchTerm) ?>&date_filter=<?= htmlspecialchars($dateFilter) ?>&start_date=<?= htmlspecialchars($startDate) ?>&end_date=<?= htmlspecialchars($endDate) ?>&visible_columns=<?= implode(',', $visibleColumns) ?>">Previous</a></li>
-                        <?php endif; ?>
-                        <?php for ($i = 1; $i <= $totalPages; $i++) : ?>
-                            <li class="page-item <?= $i == $page ? 'active' : '' ?>"><a class="page-link" href="?page=<?= $i ?>&sort_column=<?= htmlspecialchars($sortColumn) ?>&sort_order=<?= htmlspecialchars($sortOrder) ?>&search=<?= htmlspecialchars($searchTerm) ?>&date_filter=<?= htmlspecialchars($dateFilter) ?>&start_date=<?= htmlspecialchars($startDate) ?>&end_date=<?= htmlspecialchars($endDate) ?>&visible_columns=<?= implode(',', $visibleColumns) ?>"><?= $i ?></a></li>
-                        <?php endfor; ?>
-                        <?php if ($page < $totalPages) : ?>
-                            <li class="page-item"><a class="page-link" href="?page=<?= $page + 1 ?>&sort_column=<?= htmlspecialchars($sortColumn) ?>&sort_order=<?= htmlspecialchars($sortOrder) ?>&search=<?= htmlspecialchars($searchTerm) ?>&date_filter=<?= htmlspecialchars($dateFilter) ?>&start_date=<?= htmlspecialchars($startDate) ?>&end_date=<?= htmlspecialchars($endDate) ?>&visible_columns=<?= implode(',', $visibleColumns) ?>">Next</a></li>
-                        <?php endif; ?>
-                    </ul>
-                </nav>
+                <div class="pagination-container">
+                    <nav aria-label="Page navigation example">
+                        <ul class="pagination justify-content-center">
+                            <?php if ($page > 1) : ?>
+                                <li class="page-item"><a class="page-link" href="?page=<?= $page - 1 ?>&sort_column=<?= htmlspecialchars($sortColumn) ?>&sort_order=<?= htmlspecialchars($sortOrder) ?>&search=<?= htmlspecialchars($searchTerm) ?>&date_filter=<?= htmlspecialchars($dateFilter) ?>&start_date=<?= htmlspecialchars($startDate) ?>&end_date=<?= htmlspecialchars($endDate) ?>&visible_columns=<?= implode(',', $visibleColumns) ?>">Previous</a></li>
+                            <?php endif; ?>
+
+                            <!-- Always show the first page -->
+                            <li class="page-item <?= $page == 1 ? 'active' : '' ?>"><a class="page-link" href="?page=1">1</a></li>
+
+                            <!-- Show ellipsis if current page is beyond page 3 -->
+                            <?php if ($page > 3) : ?>
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            <?php endif; ?>
+
+                            <!-- Show pages around the current page -->
+                            <?php for ($i = max(2, $page - 2); $i <= min($page + 2, $totalPages - 1); $i++) : ?>
+                                <li class="page-item <?= $i == $page ? 'active' : '' ?>"><a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a></li>
+                            <?php endfor; ?>
+
+                            <!-- Show ellipsis if current page is far from the last page -->
+                            <?php if ($page < $totalPages - 2) : ?>
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            <?php endif; ?>
+
+                            <!-- Always show the last page -->
+                            <?php if ($totalPages > 1) : ?>
+                                <li class="page-item <?= $page == $totalPages ? 'active' : '' ?>"><a class="page-link" href="?page=<?= $totalPages ?>"><?= $totalPages ?></a></li>
+                            <?php endif; ?>
+
+                            <?php if ($page < $totalPages) : ?>
+                                <li class="page-item"><a class="page-link" href="?page=<?= $page + 1 ?>&sort_column=<?= htmlspecialchars($sortColumn) ?>&sort_order=<?= htmlspecialchars($sortOrder) ?>&search=<?= htmlspecialchars($searchTerm) ?>&date_filter=<?= htmlspecialchars($dateFilter) ?>&start_date=<?= htmlspecialchars($startDate) ?>&end_date=<?= htmlspecialchars($endDate) ?>&visible_columns=<?= implode(',', $visibleColumns) ?>">Next</a></li>
+                            <?php endif; ?>
+                        </ul>
+                    </nav>
+                </div>
+
             </main>
         </div>
     </div>
