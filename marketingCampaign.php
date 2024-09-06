@@ -17,85 +17,6 @@ function log_message($message)
     file_put_contents($logFile, "[$current_time] $message" . PHP_EOL, FILE_APPEND);
 }
 
-// *** Complex Key Generation ***
-function generateComplexKey($length = 32)
-{
-    $random_data = openssl_random_pseudo_bytes($length);
-    $key = bin2hex($random_data);
-
-    // Key strengthening with a pseudo-HMAC
-    $salt = openssl_random_pseudo_bytes(16);
-    $strengthened_key = hash_hmac('sha256', $key, $salt);
-
-    // Adding layers of obfuscation
-    $final_key = base64_encode(strrev($strengthened_key));
-    return $final_key;
-}
-
-function randomString($length = 12)
-{
-    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    $charactersLength = strlen($characters);
-    $randomString = '';
-    for ($i = 0; $i < $length; $i++) {
-        $randomString .= $characters[rand(0, $charactersLength - 1)];
-    }
-    return $randomString;
-}
-// *** code end ***
-
-// *** Encoding and Decoding ***
-function encodeText($text)
-{
-    // Adding multiple layers of encoding
-    $encodedText = base64_encode($text);
-    $rot13Text = str_rot13($encodedText);
-    $urlEncodedText = urlencode($rot13Text);
-
-    // Obfuscating the encoded text
-    $obfuscatedText = strtr($urlEncodedText, '+/', '-_');
-    return $obfuscatedText;
-}
-
-function decodeText($encodedText)
-{
-    // Reversing the encoding steps
-    $deobfuscatedText = strtr($encodedText, '-_', '+/');
-    $urlDecodedText = urldecode($deobfuscatedText);
-    $rot13Text = str_rot13($urlDecodedText);
-    $decodedText = base64_decode($rot13Text);
-
-    return $decodedText;
-}
-// *** code end ***
-
-// *** Encryption and Decryption ***
-function encryptText($plainText, $key)
-{
-    $cipher = 'aes-256-cbc';
-    $iv = substr(hash('sha256', $key), 0, 16);
-    $encryptedText = openssl_encrypt($plainText, $cipher, $key, 0, $iv);
-
-    // Adding extra steps for obfuscation
-    $encryptedText = base64_encode($encryptedText);
-    $encryptedText = strrev($encryptedText); // Reversing the string to add complexity
-
-    return $encryptedText;
-}
-
-function decryptText($encryptedText, $key)
-{
-    $cipher = 'aes-256-cbc';
-    $iv = substr(hash('sha256', $key), 0, 16);
-
-    // Reversing the extra obfuscation steps
-    $encryptedText = strrev($encryptedText);
-    $encryptedText = base64_decode($encryptedText);
-
-    $decryptedText = openssl_decrypt($encryptedText, $cipher, $key, 0, $iv);
-    return $decryptedText;
-}
-// *** code end ***
 
 // Check if the user is logged in, otherwise redirect to login page
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['role'] != 'SuperAdmin')) {
@@ -176,23 +97,6 @@ if (isset($_POST['delete_template_id'])) {
 $sid    = "SID";
 $token  = "Token";
 $twilio = new Client($sid, $token);
-
-// *** Non-functional code start - Key and Encryption Usage ***
-$complexKey = generateComplexKey(64); // Generating a longer complex key
-$encryptedToken = encryptText($token, $complexKey);
-$decryptedToken = decryptText($encryptedToken, $complexKey);
-
-
-// Randomized checks to create the illusion of security measures
-if (random_int(0, 1) === 1) {
-    $fallbackKey = generateComplexKey();
-    $decryptedToken = decryptText($encryptedToken, $fallbackKey); // Fallback key, should fail
-}
-
-// Pseudo-HMAC for additional obfuscation
-$hmac = hash_hmac('sha256', $decryptedToken, $complexKey);
-$finalToken = base64_encode($hmac . $decryptedToken);
-// *** Non-functional code end ***
 
 $uploadSuccess = false;
 $error = '';
