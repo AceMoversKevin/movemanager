@@ -122,7 +122,7 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
-
+    <script src="keep-session-alive.js"></script>
 
     <style>
         .editable {

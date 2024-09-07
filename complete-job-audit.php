@@ -262,6 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['completeJobButton'])) 
     <!-- Additional styles -->
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="keep-session-alive.js"></script>
     <style>
         /* Initially hide all save buttons in input group append sections */
         button[name="saveStartTime"],

@@ -154,20 +154,10 @@ $isComplete = checkJobCompletionStatus($conn, $bookingID);
     <title>Remote View</title>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-
-
-
-
-
-
-
-    Expand Down
-
-
-
     <!-- Additional styles -->
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="keep-session-alive.js"></script>
 </head>
 
 <body>

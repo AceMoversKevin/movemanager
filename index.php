@@ -187,6 +187,7 @@ while ($row = $averageBookingDurationResult->fetch_assoc()) {
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="keep-session-alive.js"></script>
     <style>
         .progress-circle {
             position: relative;
