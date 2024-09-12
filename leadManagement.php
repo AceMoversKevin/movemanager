@@ -347,19 +347,53 @@ $totalPages = ceil($totalLeads / $leadsPerPage);
                     <!-- Pagination Controls -->
                     <nav aria-label="Page navigation">
                         <ul class="pagination">
-                            <?php if ($page > 1) : ?>
+                            <!-- Previous button -->
+                            <?php if ($page > 1): ?>
                                 <li class="page-item">
                                     <a class="page-link" href="?page=<?= $page - 1 ?>&sort=<?= $sortColumn ?>&order=<?= $sortOrder ?>&search=<?= $searchTerm ?>&date_filter=<?= $dateFilter ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&visible_columns=<?= implode(',', $visibleColumns) ?>" aria-label="Previous">
                                         <span aria-hidden="true">&laquo;</span>
                                     </a>
                                 </li>
                             <?php endif; ?>
-                            <?php for ($i = 1; $i <= $totalPages; $i++) : ?>
+
+                            <?php
+                            $showPages = 5; // Number of page links to display
+                            $startPage = max(1, $page - floor($showPages / 2));
+                            $endPage = min($totalPages, $startPage + $showPages - 1);
+
+                            // Show ellipsis if the start page is greater than 1
+                            if ($startPage > 1): ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1&sort=<?= $sortColumn ?>&order=<?= $sortOrder ?>&search=<?= $searchTerm ?>&date_filter=<?= $dateFilter ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&visible_columns=<?= implode(',', $visibleColumns) ?>">1</a>
+                                </li>
+                                <?php if ($startPage > 2): ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                <?php endif; ?>
+                            <?php endif; ?>
+
+                            <!-- Page number links -->
+                            <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
                                 <li class="page-item <?= $i == $page ? 'active' : '' ?>">
                                     <a class="page-link" href="?page=<?= $i ?>&sort=<?= $sortColumn ?>&order=<?= $sortOrder ?>&search=<?= $searchTerm ?>&date_filter=<?= $dateFilter ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&visible_columns=<?= implode(',', $visibleColumns) ?>"><?= $i ?></a>
                                 </li>
                             <?php endfor; ?>
-                            <?php if ($page < $totalPages) : ?>
+
+                            <!-- Show ellipsis if there are more pages after the end page -->
+                            <?php if ($endPage < $totalPages): ?>
+                                <?php if ($endPage < $totalPages - 1): ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                <?php endif; ?>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<?= $totalPages ?>&sort=<?= $sortColumn ?>&order=<?= $sortOrder ?>&search=<?= $searchTerm ?>&date_filter=<?= $dateFilter ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&visible_columns=<?= implode(',', $visibleColumns) ?>"><?= $totalPages ?></a>
+                                </li>
+                            <?php endif; ?>
+
+                            <!-- Next button -->
+                            <?php if ($page < $totalPages): ?>
                                 <li class="page-item">
                                     <a class="page-link" href="?page=<?= $page + 1 ?>&sort=<?= $sortColumn ?>&order=<?= $sortOrder ?>&search=<?= $searchTerm ?>&date_filter=<?= $dateFilter ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&visible_columns=<?= implode(',', $visibleColumns) ?>" aria-label="Next">
                                         <span aria-hidden="true">&raquo;</span>
