@@ -369,7 +369,7 @@ while ($row = $averageBookingDurationResult->fetch_assoc()) {
                             $employeeNamesStatus = explode(',', $row['EmployeeNamesStatus']);
                             ?>
                             <div class="col-md-4">
-                                <div class="card mb-4 shadow-sm" onclick="window.location.href='emulatedDetailsPage.php?bookingID=<?= $row['BookingID'] ?>'">
+                                <div class="card mb-4 shadow-sm" onclick="window.location.href='jobDetails.php?BookingID=<?= $row['BookingID'] ?>'">
                                     <div class="card-body">
                                         <h5 class="card-title"><?= htmlspecialchars($row["BookingName"]) ?> from <?= htmlspecialchars($row["PickupLocation"]) ?> to <?= htmlspecialchars($row["DropoffLocation"]) ?></h5>
                                         <div class="employee-list">
