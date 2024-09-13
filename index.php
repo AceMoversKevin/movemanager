@@ -319,6 +319,12 @@ while ($row = $averageBookingDurationResult->fetch_assoc()) {
         .not-accepted {
             background-color: red;
         }
+
+        .quick-access-tiles {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
     </style>
 </head>
 
@@ -344,65 +350,106 @@ while ($row = $averageBookingDurationResult->fetch_assoc()) {
                     <h1 class="h2" id="Main-Heading">Welcome, <?= $_SESSION['username'] ?>!</h1>
                 </div>
                 <!-- Dashboard content goes here -->
-                <div class="row">
-                    <?php if ($result->num_rows > 0) : ?>
-                        <?php while ($row = $result->fetch_assoc()) : ?>
-                            <?php
-                            $steps = [
-                                'Started' => !is_null($row["JobStartTime"]),
-                                'Ended' => !is_null($row["JobEndTime"]),
-                                'Audit' => !is_null($row["JobIsComplete"]) && $row["JobIsComplete"] == 1,
-                                'Payment' => !is_null($row["JobIsConfirmed"]) && $row["JobIsConfirmed"] == 1
-                            ];
+                <div class="container-fluid">
+                    <div class="row">
+                        <!-- Job Status Cards - 3/4 of the viewport -->
+                        <div class="col-md-9">
+                            <div class="row">
+                                <?php if ($result->num_rows > 0) : ?>
+                                    <?php while ($row = $result->fetch_assoc()) : ?>
+                                        <?php
+                                        $steps = [
+                                            'Started' => !is_null($row["JobStartTime"]),
+                                            'Ended' => !is_null($row["JobEndTime"]),
+                                            'Audit' => !is_null($row["JobIsComplete"]) && $row["JobIsComplete"] == 1,
+                                            'Payment' => !is_null($row["JobIsConfirmed"]) && $row["JobIsConfirmed"] == 1
+                                        ];
 
-                            $progressClass = '';
-                            if ($steps['Payment']) {
-                                $progressClass = 'full';
-                            } elseif ($steps['Audit']) {
-                                $progressClass = 'three-quarters';
-                            } elseif ($steps['Ended']) {
-                                $progressClass = 'half';
-                            } elseif ($steps['Started']) {
-                                $progressClass = 'quarter';
-                            }
+                                        $progressClass = '';
+                                        if ($steps['Payment']) {
+                                            $progressClass = 'full';
+                                        } elseif ($steps['Audit']) {
+                                            $progressClass = 'three-quarters';
+                                        } elseif ($steps['Ended']) {
+                                            $progressClass = 'half';
+                                        } elseif ($steps['Started']) {
+                                            $progressClass = 'quarter';
+                                        }
 
-                            $employeeNamesStatus = explode(',', $row['EmployeeNamesStatus']);
-                            ?>
-                            <div class="col-md-4">
-                                <div class="card mb-4 shadow-sm" onclick="window.location.href='jobDetails.php?BookingID=<?= $row['BookingID'] ?>'">
-                                    <div class="card-body">
-                                        <h5 class="card-title"><?= htmlspecialchars($row["BookingName"]) ?> from <?= htmlspecialchars($row["PickupLocation"]) ?> to <?= htmlspecialchars($row["DropoffLocation"]) ?></h5>
-                                        <div class="employee-list">
-                                            <strong>Employees:</strong>
-                                            <div class="employee-container">
-                                                <?php foreach ($employeeNamesStatus as $employeeStatus) : ?>
-                                                    <?php list($name, $isAccepted) = explode('|', $employeeStatus); ?>
-                                                    <span class="employee-name-status">
-                                                        <?= htmlspecialchars($name) ?>
-                                                        <span class="status-circle <?= $isAccepted == 1 ? 'accepted' : 'not-accepted' ?>"></span>
-                                                    </span>
-                                                <?php endforeach; ?>
+                                        $employeeNamesStatus = explode(',', $row['EmployeeNamesStatus']);
+                                        ?>
+                                        <div class="col-md-4">
+                                            <div class="card mb-4 shadow-sm" onclick="window.location.href='jobDetails.php?BookingID=<?= $row['BookingID'] ?>'">
+                                                <div class="card-body">
+                                                    <h5 class="card-title"><?= htmlspecialchars($row["BookingName"]) ?> from <?= htmlspecialchars($row["PickupLocation"]) ?> to <?= htmlspecialchars($row["DropoffLocation"]) ?></h5>
+                                                    <div class="employee-list">
+                                                        <strong>Employees:</strong>
+                                                        <div class="employee-container">
+                                                            <?php foreach ($employeeNamesStatus as $employeeStatus) : ?>
+                                                                <?php list($name, $isAccepted) = explode('|', $employeeStatus); ?>
+                                                                <span class="employee-name-status">
+                                                                    <?= htmlspecialchars($name) ?>
+                                                                    <span class="status-circle <?= $isAccepted == 1 ? 'accepted' : 'not-accepted' ?>"></span>
+                                                                </span>
+                                                            <?php endforeach; ?>
+                                                        </div>
+                                                    </div>
+                                                    <div class="progress-circle <?= $progressClass ?>">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="80" height="80">
+                                                            <defs>
+                                                                <linearGradient id="GradientColor">
+                                                                    <stop offset="0%" stop-color="#21d4fd" />
+                                                                    <stop offset="100%" stop-color="#b721ff" />
+                                                                </linearGradient>
+                                                            </defs>
+                                                            <circle class="bg" cx="40" cy="40" r="30" />
+                                                            <circle class="progress" cx="40" cy="40" r="30" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="progress-circle <?= $progressClass ?>">
-                                            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="80" height="80">
-                                                <defs>
-                                                    <linearGradient id="GradientColor">
-                                                        <stop offset="0%" stop-color="#21d4fd" />
-                                                        <stop offset="100%" stop-color="#b721ff" />
-                                                    </linearGradient>
-                                                </defs>
-                                                <circle class="bg" cx="40" cy="40" r="30" />
-                                                <circle class="progress" cx="40" cy="40" r="30" />
-                                            </svg>
-                                        </div>
+                                    <?php endwhile; ?>
+                                <?php else : ?>
+                                    <p>No assigned jobs found.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- Quick Access Tiles - 1/4 of the viewport -->
+                        <div class="col-md-3">
+                            <div class="quick-access-tiles">
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Jobs</h5>
+                                        <a href="unassignedJobs.php" class="btn btn-primary btn-block">View Jobs</a>
+                                    </div>
+                                </div>
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Assigned Jobs</h5>
+                                        <a href="assignedJobs.php" class="btn btn-primary btn-block">View Assigned Jobs</a>
+                                    </div>
+                                </div>
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Completed Jobs</h5>
+                                        <a href="completedJobs.php" class="btn btn-primary btn-block">View Completed Jobs</a>
+                                    </div>
+                                </div>
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Invoices</h5>
+                                        <a href="customerInvoices.php" class="btn btn-primary btn-block">View Invoices</a>
                                     </div>
                                 </div>
                             </div>
-                        <?php endwhile; ?>
-                    <?php else : ?>
-                        <p>No assigned jobs found.</p>
-                    <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <!-- Hiding the Calender on Boss's request  09/09/2024
+                <div class="calendar">
+                    <iframe src="https://calendar.google.com/calendar/embed?height=800&wkst=1&ctz=Australia%2FSydney&bgcolor=%23ffffff&src=a2V2aW5AYWNlbW92ZXJzLmNvbS5hdQ&src=cTloam5oNmlxMzZlcmQxMmw0NG5lMG1lN2NAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&src=Y19iMjhkYWY5ZDU5MDM4NWNhZDUxYmZhMGRiOWQ0YWY1YmFkNjBmNDM2MzcxZmU5MTc3ZDgwM2ViYjQ5YmRhZjBkQGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20&src=dGQ5dnZmZWNwM29uOTRxOTE1bGx2bjFrdGNAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&src=bmlja0BhY2Vtb3ZlcnMuY29tLmF1&color=%23039BE5&color=%238E24AA&color=%23B39DDB&color=%23E67C73&color=%234285F4" style="border-width:0" width="1400" height="700" frameborder="0" scrolling="no"></iframe>
                 </div>
 -->
                 <!-- Statistics Visualization Section -->
