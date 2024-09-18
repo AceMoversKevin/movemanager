@@ -17,7 +17,6 @@ function log_message($message)
     file_put_contents($logFile, "[$current_time] $message" . PHP_EOL, FILE_APPEND);
 }
 
-
 // Check if the user is logged in, otherwise redirect to login page
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['role'] != 'SuperAdmin')) {
     log_message('Unauthorized access attempt.');
@@ -25,12 +24,52 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
     exit;
 }
 
-// Fetch available templates from the database
+// Initialize variables
 $templates = [];
 $template_selected = null;
+$uploadSuccess = false;
+$error = '';
 
+// Handle deleting a template
+if (isset($_GET['delete_template_id'])) {
+    $delete_template_id = intval($_GET['delete_template_id']);
+    try {
+        $stmt = $conn->prepare("DELETE FROM sms_templates WHERE id = ?");
+        $stmt->bind_param("i", $delete_template_id);
+        $stmt->execute();
+        $stmt->close();
+        log_message("Template with ID '$delete_template_id' deleted.");
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit;
+    } catch (Exception $e) {
+        log_message('Error deleting template: ' . $e->getMessage());
+        $error = "Error deleting template.";
+    }
+}
+
+// Handle updating a template
+if (isset($_POST['edit_template_id']) && isset($_POST['edit_template_name']) && isset($_POST['edit_template_body'])) {
+    $edit_template_id = intval($_POST['edit_template_id']);
+    $edit_template_name = $_POST['edit_template_name'];
+    $edit_template_body = $_POST['edit_template_body'];
+
+    try {
+        $stmt = $conn->prepare("UPDATE sms_templates SET template_name = ?, template_body = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $edit_template_name, $edit_template_body, $edit_template_id);
+        $stmt->execute();
+        $stmt->close();
+        log_message("Template with ID '$edit_template_id' updated.");
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit;
+    } catch (Exception $e) {
+        log_message('Error updating template: ' . $e->getMessage());
+        $error = "Error updating template.";
+    }
+}
+
+// Fetch available templates from the database
 try {
-    $result = $conn->query("SELECT id, template_name FROM sms_templates");
+    $result = $conn->query("SELECT id, template_name, template_body FROM sms_templates");
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $templates[] = $row;
@@ -41,15 +80,13 @@ try {
     }
 
     if (isset($_POST['template_id']) && !empty($_POST['template_id'])) {
-        $template_id = $_POST['template_id'];
-        $stmt = $conn->prepare("SELECT template_body FROM sms_templates WHERE id = ?");
-        $stmt->bind_param("i", $template_id);
-        $stmt->execute();
-        $stmt->bind_result($template_body);
-        if ($stmt->fetch()) {
-            $template_selected = $template_body;
+        $template_id = intval($_POST['template_id']);
+        foreach ($templates as $template) {
+            if ($template['id'] == $template_id) {
+                $template_selected = $template['template_body'];
+                break;
+            }
         }
-        $stmt->close();
     }
 } catch (Exception $e) {
     log_message($e->getMessage());
@@ -75,31 +112,10 @@ if (isset($_POST['new_template_name']) && isset($_POST['new_template_body'])) {
     }
 }
 
-// Handle deleting a template
-if (isset($_POST['delete_template_id'])) {
-    $delete_template_id = $_POST['delete_template_id'];
-
-    try {
-        $stmt = $conn->prepare("DELETE FROM sms_templates WHERE id = ?");
-        $stmt->bind_param("i", $delete_template_id);
-        $stmt->execute();
-        $stmt->close();
-        log_message("Template with ID $delete_template_id deleted.");
-        header("Location: " . $_SERVER['PHP_SELF']);
-        exit;
-    } catch (Exception $e) {
-        log_message('Error deleting template: ' . $e->getMessage());
-        $error = "Error deleting template.";
-    }
-}
-
 // Twilio credentials
-$sid    = "SID";
-$token  = "Token";
+$sid    = "THE_ACCOUNT_SID";
+$token  = "THE_ACCOUNT_AUTH_TOKEN";
 $twilio = new Client($sid, $token);
-
-$uploadSuccess = false;
-$error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && isset($_POST['send_sms'])) {
     $file = $_FILES['csv_file']['tmp_name'];
@@ -118,8 +134,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && isset(
             // Use the selected template or fallback to the default message
             $message_body = !empty($template_selected) ? str_replace("{name}", $name, $template_selected) : "Hello $name, this is a marketing message from AceMovers.";
 
+            // Strip HTML tags from message body
+            $plain_message_body = strip_tags($message_body);
+
             // Ensure the message body is not empty
-            if (empty(trim($message_body))) {
+            if (empty(trim($plain_message_body))) {
                 log_message("Empty message body for phone number $phone_number.");
                 $error = "Cannot send SMS with an empty message body.";
                 break;
@@ -130,8 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && isset(
                 $message = $twilio->messages->create(
                     $phone_number, // to
                     array(
-                        "messagingServiceSid" => "MSID", // Your messaging service SID
-                        "body" => $message_body
+                        "messagingServiceSid" => "THE_MESSAGING_SERVICE_SID", // The messaging service SID
+                        "body" => $plain_message_body
                     )
                 );
                 log_message("SMS sent successfully to $phone_number.");
@@ -152,20 +171,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && isset(
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+    <!-- Meta tags and other head content -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
     <title>Marketing Campaign</title>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <!-- Additional styles -->
-    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+    <!-- CKEditor 5 -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/38.1.0/classic/ckeditor.js"></script>
     <script src="keep-session-alive.js"></script>
 </head>
 
@@ -215,15 +235,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && isset(
 
                 <!-- Display selected template -->
                 <?php if ($template_selected): ?>
-                    <div class="alert alert-info shadow-sm rounded">
-                        <strong>Selected Template:</strong> <?php echo htmlspecialchars($template_selected); ?>
+                    <div class="card mb-3 shadow-sm">
+                        <div class="card-header">
+                            <strong>Selected Template:</strong>
+                        </div>
+                        <div class="card-body">
+                            <?php echo $template_selected; ?>
+                        </div>
                     </div>
                 <?php endif; ?>
 
+                <!-- Upload CSV Form -->
+                <form method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="template_id" value="<?php echo isset($_POST['template_id']) ? htmlspecialchars($_POST['template_id']) : ''; ?>">
+                    <div class="form-group">
+                        <label for="csv_file" class="font-weight-bold">Upload CSV File</label>
+                        <input type="file" class="form-control-file border rounded p-2" id="csv_file" name="csv_file" accept=".csv" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block shadow-sm" name="send_sms">Send SMS</button>
+                </form>
+
                 <!-- Template Management -->
-                <h2 class="h4 text-secondary mt-5">Manage Templates</h2>
-                <table class="table table-striped table-hover mt-3">
-                    <thead>
+                <h2 class="h4 text-secondary mt-5">Template Management</h2>
+                <table class="table table-bordered table-hover shadow-sm">
+                    <thead class="thead-light">
                         <tr>
                             <th>Template Name</th>
                             <th>Actions</th>
@@ -234,14 +269,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && isset(
                             <tr>
                                 <td><?php echo htmlspecialchars($template['template_name']); ?></td>
                                 <td>
-                                    <form method="post" style="display:inline-block;">
-                                        <input type="hidden" name="delete_template_id" value="<?php echo $template['id']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this template?');">
-                                            <i class="fa fa-trash"></i> Delete
-                                        </button>
-                                    </form>
+                                    <!-- Edit Button -->
+                                    <button class="btn btn-sm btn-warning" data-toggle="modal" data-target="#editTemplateModal<?php echo $template['id']; ?>">Edit</button>
+                                    <!-- Delete Button -->
+                                    <a href="?delete_template_id=<?php echo $template['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this template?');">Delete</a>
                                 </td>
                             </tr>
+
+                            <!-- Edit Template Modal -->
+                            <div class="modal fade" id="editTemplateModal<?php echo $template['id']; ?>" tabindex="-1" role="dialog" aria-labelledby="editTemplateModalLabel<?php echo $template['id']; ?>" aria-hidden="true">
+                                <div class="modal-dialog" role="document">
+                                    <form method="post">
+                                        <input type="hidden" name="edit_template_id" value="<?php echo $template['id']; ?>">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="editTemplateModalLabel<?php echo $template['id']; ?>">Edit Template</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="form-group">
+                                                    <label for="edit_template_name_<?php echo $template['id']; ?>" class="font-weight-bold">Template Name</label>
+                                                    <input type="text" class="form-control" id="edit_template_name_<?php echo $template['id']; ?>" name="edit_template_name" value="<?php echo htmlspecialchars($template['template_name']); ?>" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="edit_template_body_<?php echo $template['id']; ?>" class="font-weight-bold">Template Body</label>
+                                                    <textarea class="form-control" id="edit_template_body_<?php echo $template['id']; ?>" name="edit_template_body" rows="4" required><?php echo htmlspecialchars($template['template_body']); ?></textarea>
+                                                    <small class="form-text text-muted">Use <code>{name}</code> to insert the customer's name.</small>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-success">Save Changes</button>
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
                         <?php endforeach; ?>
                     </tbody>
                 </table>
@@ -260,15 +326,65 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['csv_file']) && isset(
                     </div>
                     <button type="submit" class="btn btn-success btn-block shadow-sm">Create Template</button>
                 </form>
+
             </main>
 
         </div>
     </div>
 
-    <!-- Bootstrap JS, Popper.js, and jQuery -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <!-- Include Scripts at the end of body -->
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Popper.js -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <!-- Bootstrap JS -->
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- CKEditor 5 -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/38.1.0/classic/ckeditor.js"></script>
+
+    <!-- Initialize CKEditor for 'Create New Template' -->
+    <script>
+        ClassicEditor.create(document.querySelector('#new_template_body'))
+            .catch(error => {
+                console.error(error);
+            });
+    </script>
+
+    <!-- Initialize CKEditor for Edit Modals -->
+    <?php foreach ($templates as $template): ?>
+        <script>
+            let editor<?php echo $template['id']; ?>;
+            $('#editTemplateModal<?php echo $template['id']; ?>').on('shown.bs.modal', function() {
+                if (editor<?php echo $template['id']; ?>) {
+                    editor<?php echo $template['id']; ?>.destroy()
+                        .then(() => {
+                            initEditor<?php echo $template['id']; ?>();
+                        });
+                } else {
+                    initEditor<?php echo $template['id']; ?>();
+                }
+            });
+
+            $('#editTemplateModal<?php echo $template['id']; ?>').on('hidden.bs.modal', function() {
+                if (editor<?php echo $template['id']; ?>) {
+                    editor<?php echo $template['id']; ?>.destroy()
+                        .then(() => {
+                            editor<?php echo $template['id']; ?> = null;
+                        });
+                }
+            });
+
+            function initEditor<?php echo $template['id']; ?>() {
+                ClassicEditor.create(document.querySelector('#edit_template_body_<?php echo $template['id']; ?>'))
+                    .then(editor => {
+                        editor<?php echo $template['id']; ?> = editor;
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            }
+        </script>
+    <?php endforeach; ?>
 
 </body>
 
