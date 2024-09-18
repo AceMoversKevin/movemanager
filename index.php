@@ -189,77 +189,87 @@ while ($row = $averageBookingDurationResult->fetch_assoc()) {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="keep-session-alive.js"></script>
     <style>
+        /* Remove the circular progress and replace it with the timeline */
         .progress-circle {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 10px;
+            display: none;
         }
 
-        .progress-circle svg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            transform: rotate(-90deg);
-        }
-
-        .progress-circle circle {
-            fill: none;
-            stroke-width: 8;
-            stroke-linecap: round;
-        }
-
-        .progress-circle .bg {
-            stroke: #f0f0f0;
-        }
-
-        .progress-circle .progress {
-            stroke: url(#GradientColor);
-            stroke-dasharray: 188.4;
-            stroke-dashoffset: 188.4;
-            transition: stroke-dashoffset 0.5s linear;
-        }
-
-        .quarter .progress {
-            stroke-dashoffset: 141.3;
-        }
-
-        .half .progress {
-            stroke-dashoffset: 94.2;
-        }
-
-        .three-quarters .progress {
-            stroke-dashoffset: 47.1;
-        }
-
-        .full .progress {
-            stroke-dashoffset: 0;
-        }
-
-        .card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .card-body {
-            padding: 20px;
-        }
-
-        .card-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
-
-        .progress-circle {
+        /* Timeline styling */
+        .step-wizard {
+            display: flex;
+            justify-content: center;
             margin-top: 20px;
         }
 
-        .progress-label {
+        .step-wizard-list {
+            display: flex;
+            list-style-type: none;
+            width: 100%;
+            padding: 0;
+            position: relative;
+            max-width: 500px;
+            margin: auto;
+        }
+
+        .step-wizard-item {
+            flex-grow: 1;
+            text-align: center;
+            position: relative;
+            padding: 0 10px;
+        }
+
+        .step-wizard-item+.step-wizard-item:after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            height: 2px;
+            width: 100%;
+            background-color: #21d4fd;
+            transform: translateX(-50%);
+            z-index: -1;
+        }
+
+        .progress-count {
+            height: 30px;
+            width: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: #fff;
+            border: 2px solid #21d4fd;
+            color: #21d4fd;
             font-size: 14px;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+
+        .current-item .progress-count {
+            border-color: #21d4fd;
+            background-color: #fff;
+            color: #21d4fd;
+        }
+
+        .completed-item .progress-count {
+            background-color: #21d4fd;
+            color: #fff;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            margin-top: 5px;
+            color: #333;
             font-weight: 600;
-            margin-top: 10px;
+        }
+
+        .current-item~.step-wizard-item .progress-count {
+            border-color: #ccc;
+            color: #ccc;
+        }
+
+        .current-item~.step-wizard-item .progress-label {
+            color: #ccc;
         }
 
         .employee-list {
@@ -270,27 +280,8 @@ while ($row = $averageBookingDurationResult->fetch_assoc()) {
         .employee-list span {
             display: block;
         }
-    </style>
 
-    <style>
-        .chart-container {
-            width: 100%;
-            max-width: 500px;
-            height: 500px;
-            margin: auto;
-        }
-
-        .toggle-icon {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            z-index: 10;
-            font-size: 20px;
-        }
-    </style>
-
-    <style>
+        /* Employee status circle */
         .employee-container {
             display: flex;
             flex-wrap: wrap;
@@ -301,7 +292,6 @@ while ($row = $averageBookingDurationResult->fetch_assoc()) {
             align-items: center;
             margin-right: 10px;
             margin-bottom: 5px;
-            /* Optional, for spacing in case of wrapping */
         }
 
         .status-circle {
@@ -324,6 +314,47 @@ while ($row = $averageBookingDurationResult->fetch_assoc()) {
             position: sticky;
             top: 0;
             z-index: 1000;
+        }
+
+        /* Additional card styling for consistency */
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        /* Progress label styling */
+        .progress-label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        /* Chart container (if needed for charts) */
+        .chart-container {
+            width: 100%;
+            max-width: 500px;
+            height: 500px;
+            margin: auto;
+        }
+
+        .toggle-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            z-index: 10;
+            font-size: 20px;
         }
     </style>
 </head>
