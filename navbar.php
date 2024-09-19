@@ -29,7 +29,7 @@
                             </a>
                             <ul class="collapse list-unstyled sub-menu" id="jobsSubmenu">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="unassignedJobs.php">Unassigned Jobs</a>
+                                    <a class="nav-link" href="unassignedJobs.php">Jobs</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="assignedJobs.php">Assigned Jobs</a>
@@ -38,13 +38,13 @@
                                     <a class="nav-link" href="completedJobs.php">Completed Jobs</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="createInvoice.php">Create Invoice</a>
-                                </li>
-                                <li class="nav-item">
                                     <a class="nav-link" href="customerSignatures.php">Customer Signatures</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" href="customerInvoices.php">Customer Invoices</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="createInvoice.php">Create Invoice</a>
                                 </li>
                             </ul>
                         </li>

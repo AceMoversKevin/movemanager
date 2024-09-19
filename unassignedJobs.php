@@ -14,7 +14,7 @@ $sortOrder = isset($_GET['order']) && $_GET['order'] === 'desc' ? 'desc' : 'asc'
 
 // Handle search term and date filter
 $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
-$dateFilter = isset($_GET['date_filter']) ? $_GET['date_filter'] : '';
+$dateFilter = isset($_GET['date_filter']) ? $_GET['date_filter'] : 'next_day'; // Set default to 'next_day'
 $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : '';
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 
@@ -27,7 +27,7 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $recordsPerPage = 50;
 $offset = ($page - 1) * $recordsPerPage;
 
-// Base query to select bookings with less than 2 employees assigned
+// Base query to select all bookings
 $baseQuery = "
     SELECT b.*, COUNT(ba.BookingID) as AssignedCount
     FROM Bookings b
@@ -37,7 +37,8 @@ $baseQuery = "
 
 // Add search term filtering
 if ($searchTerm) {
-    $baseQuery .= " AND (b.Name LIKE '%$searchTerm%' OR b.Email LIKE '%$searchTerm%' OR b.Phone LIKE '%$searchTerm%' OR b.Bedrooms LIKE '%$searchTerm%' OR b.BookingDate LIKE '%$searchTerm%' OR b.MovingDate LIKE '%$searchTerm%' OR b.PickupLocation LIKE '%$searchTerm%' OR b.DropoffLocation LIKE '%$searchTerm%')";
+    $searchTermEscaped = $conn->real_escape_string($searchTerm);
+    $baseQuery .= " AND (b.Name LIKE '%$searchTermEscaped%' OR b.Email LIKE '%$searchTermEscaped%' OR b.Phone LIKE '%$searchTermEscaped%' OR b.Bedrooms LIKE '%$searchTermEscaped%' OR b.BookingDate LIKE '%$searchTermEscaped%' OR b.MovingDate LIKE '%$searchTermEscaped%' OR b.PickupLocation LIKE '%$searchTermEscaped%' OR b.DropoffLocation LIKE '%$searchTermEscaped%')";
 }
 
 // Add date filter
@@ -78,7 +79,9 @@ if ($dateFilter) {
             break;
         case 'date_range':
             if ($startDate && $endDate) {
-                $baseQuery .= " AND b.MovingDate BETWEEN '$startDate' AND '$endDate'";
+                $startDateEscaped = $conn->real_escape_string($startDate);
+                $endDateEscaped = $conn->real_escape_string($endDate);
+                $baseQuery .= " AND b.MovingDate BETWEEN '$startDateEscaped' AND '$endDateEscaped'";
             }
             break;
         default:
@@ -89,14 +92,14 @@ if ($dateFilter) {
 // Query to get the total number of records
 $totalQuery = "
     SELECT COUNT(*) as total 
-    FROM ($baseQuery GROUP BY b.BookingID HAVING COUNT(ba.BookingID) < 2) as subquery
+    FROM ($baseQuery GROUP BY b.BookingID) as subquery
 ";
 $totalResult = $conn->query($totalQuery);
 $totalRows = $totalResult->fetch_assoc()['total'];
 $totalPages = ceil($totalRows / $recordsPerPage);
 
-// Add grouping, having, sorting, and pagination to the base query
-$query = "$baseQuery GROUP BY b.BookingID HAVING COUNT(ba.BookingID) < 2 ORDER BY $sortColumn $sortOrder LIMIT $offset, $recordsPerPage";
+// Add grouping, sorting, and pagination to the base query
+$query = "$baseQuery GROUP BY b.BookingID ORDER BY $sortColumn $sortOrder LIMIT $offset, $recordsPerPage";
 $result = $conn->query($query);
 
 // Fetch available active Driver and Helper employees
@@ -114,7 +117,7 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Unassigned Jobs</title>
+    <title>Jobs</title>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="style.css">
@@ -123,6 +126,7 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
     <script src="keep-session-alive.js"></script>
+
 
     <style>
         .editable {
@@ -151,7 +155,6 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
             border-radius: 3px;
             cursor: pointer;
         }
-
     </style>
 </head>
 
@@ -171,7 +174,7 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
 
             <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2" id="Main-Heading">Unassigned Jobs</h1>
+                    <h1 class="h2" id="Main-Heading">Jobs</h1>
                 </div>
 
                 <form method="GET" action="unassignedJobs.php" class="mb-3">
@@ -250,8 +253,14 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
                                 $assignedStmt->bind_param("i", $row['BookingID']);
                                 $assignedStmt->execute();
                                 $assignedResult = $assignedStmt->get_result();
-                                $assignedEmployees = $assignedResult->fetch_all(MYSQLI_ASSOC); ?>
-                                <tr>
+                                $assignedEmployees = $assignedResult->fetch_all(MYSQLI_ASSOC);
+                                // Determine the row class based on the number of assigned employees
+                                $rowClass = '';
+                                if ($row['AssignedCount'] >= 2) {
+                                    $rowClass = 'table-info'; // Bootstrap class for green background
+                                }
+                            ?>
+                                <tr class="<?= $rowClass ?>">
                                     <?php if (in_array('Name', $visibleColumns)) : ?><td class="editable" data-field="Name" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Name']) ?></td><?php endif; ?>
                                     <?php if (in_array('Email', $visibleColumns)) : ?><td class="editable" data-field="Email" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Email']) ?></td><?php endif; ?>
                                     <?php if (in_array('Phone', $visibleColumns)) : ?><td class="editable" data-field="Phone" data-id="<?= $row['BookingID'] ?>"><?= htmlspecialchars($row['Phone']) ?></td><?php endif; ?>
@@ -284,7 +293,7 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
                                     <!-- Assign job button -->
                                     <td>
                                         <button class="btn btn-outline-success btn-sm assign-job" data-toggle="modal" data-target="#assignJobsModal<?= $row['BookingID'] ?>">
-                                            Assign Job
+                                            Edit
                                         </button>
                                     </td>
                                 </tr>

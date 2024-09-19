@@ -27,9 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     }
 }
 
-// Fetch all completed jobs with their associated booking details, applying filters if set
+// SQL query to fetch completed jobs and assigned employees from the BookingAssignments table
 $query = "
     SELECT 
+        cj.CompletionID,
         b.BookingID,
         b.Name AS CustomerName,
         b.Email AS CustomerEmail,
@@ -38,12 +39,21 @@ $query = "
         b.DropoffLocation,
         b.TimeSlot,
         b.TruckSize,
-        b.Rate
+        b.Rate,
+        jc.TotalCharge,
+        jc.TotalLaborTime,
+        jc.StartTime,
+        jc.EndTime,
+        GROUP_CONCAT(e.Name SEPARATOR ', ') AS Team
     FROM CompletedJobs cj
     JOIN Bookings b ON cj.BookingID = b.BookingID
+    LEFT JOIN JobCharges jc ON jc.BookingID = b.BookingID
+    LEFT JOIN BookingAssignments ba ON ba.BookingID = b.BookingID
+    LEFT JOIN Employees e ON ba.EmployeePhoneNo = e.PhoneNo
     WHERE 1 = 1
 ";
 
+// Applying filters based on the search form
 if ($searchName) {
     $query .= " AND b.Name LIKE ?";
     $searchName = '%' . $searchName . '%';
@@ -56,8 +66,11 @@ if ($searchDate) {
     $query .= " AND b.MovingDate = ?";
 }
 
+$query .= " GROUP BY cj.CompletionID ORDER BY cj.CompletionID DESC";
+
 $stmt = $conn->prepare($query);
 
+// Bind parameters
 if ($searchName && $searchEmail && $searchDate) {
     $stmt->bind_param("sss", $searchName, $searchEmail, $searchDate);
 } elseif ($searchName && $searchEmail) {
@@ -74,7 +87,11 @@ if ($searchName && $searchEmail && $searchDate) {
     $stmt->bind_param("s", $searchDate);
 }
 
-$stmt->execute();
+if (!$stmt->execute()) {
+    echo "Error executing query: " . $stmt->error;
+    exit;
+}
+
 $result = $stmt->get_result();
 $completedJobs = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
@@ -141,16 +158,32 @@ $stmt->close();
                                     <h5 class="mb-1"><?php echo htmlspecialchars($job['CustomerName']); ?></h5>
                                     <small><?php echo htmlspecialchars($job['TimeSlot']); ?></small>
                                 </div>
-                                <p class="mb-1">
-                                    <strong>Email:</strong> <?php echo htmlspecialchars($job['CustomerEmail']); ?><br>
-                                    <strong>Moving Date:</strong> <?php echo htmlspecialchars($job['MovingDate']); ?><br>
-                                    <strong>Pickup Location:</strong> <?php echo htmlspecialchars($job['PickupLocation']); ?><br>
-                                    <strong>Dropoff Location:</strong> <?php echo htmlspecialchars($job['DropoffLocation']); ?>
-                                </p>
-                                <small>
-                                    <strong>Truck Size:</strong> <?php echo htmlspecialchars($job['TruckSize']); ?> <br>
-                                    <strong>Hourly Rate:</strong> $<?php echo htmlspecialchars(number_format($job['Rate'], 2)); ?>
-                                </small>
+
+                                <!-- Grid layout for two-column division -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1">
+                                            <strong>Email:</strong> <?php echo htmlspecialchars($job['CustomerEmail']); ?><br>
+                                            <strong>Moving Date:</strong> <?php echo htmlspecialchars($job['MovingDate']); ?><br>
+                                            <strong>Pickup Location:</strong> <?php echo htmlspecialchars($job['PickupLocation']); ?><br>
+                                            <strong>Dropoff Location:</strong> <?php echo htmlspecialchars($job['DropoffLocation']); ?><br>
+                                            <strong>Start Time:</strong> <?php echo htmlspecialchars($job['StartTime']); ?><br>
+                                            <strong>End Time:</strong> <?php echo htmlspecialchars($job['EndTime']); ?>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-1">
+                                            <strong>Team for this Move:</strong> <strong>
+                                                <?php
+                                                echo htmlspecialchars($job['Team'] ? $job['Team'] : 'No team assigned');
+                                                ?></strong><br>
+                                            <strong>Total Charge:</strong> $<?php echo htmlspecialchars(number_format($job['TotalCharge'], 2)); ?><br>
+                                            <strong>Total Hours:</strong> <?php echo htmlspecialchars(number_format($job['TotalLaborTime'], 2)); ?> hours<br>
+                                            <strong>Truck Size:</strong> <?php echo htmlspecialchars($job['TruckSize']); ?><br>
+                                            <strong>Hourly Rate:</strong> $<?php echo htmlspecialchars(number_format($job['Rate'], 2)); ?>
+                                        </p>
+                                    </div>
+                                </div>
                             </a>
                         <?php endforeach; ?>
                     <?php else: ?>
