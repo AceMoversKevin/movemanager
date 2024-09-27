@@ -153,7 +153,8 @@ function format_duration($seconds)
 }
 
 // Find signature image
-$signatureDir = 'https://movers.alphamovers.com.au/signatures/';
+//$signatureDir = 'https://movers.alphamovers.com.au/signatures/'; (globe() function does not read URLs, path should be as follows
+$signatureDir = '/home/alphaard/movers.alphamovers.com.au/signatures/';
 $signatureFilePattern = $signatureDir . $bookingID . '_' . '*' . '.*';
 $signatureFiles = glob($signatureFilePattern);
 $signatureFile = !empty($signatureFiles) ? $signatureFiles[0] : null;
@@ -301,11 +302,27 @@ $paymentMethod = $completedJob ? $completedJob['PaymentMethod'] : 'Not Specified
                             <tr>
                                 <th>Signature</th>
                                 <td>
+                                    <!--
                                     <?php if ($signatureFile): ?>
                                         <img src="<?php echo htmlspecialchars($signatureFile); ?>" alt="Signature" style="max-width: 100%;">
                                     <?php else: ?>
                                         No signature available.
                                     <?php endif; ?>
+                                    <?php if ($signatureFile): ?>
+                              -->
+                                    <?php
+                                        // globe() returns file paths, not URLs, se we have to reconstruct URL as follows                                
+                                        // Define the base URL to your signatures directory
+                                        $baseURL = 'https://movers.alphamovers.com.au/signatures/';
+                                        // Get the filename from the filesystem path
+                                        $filename = basename($signatureFile);
+                                        // Construct the full URL
+                                        $signatureURL = $baseURL . $filename;
+                                    ?>
+                                    <img src="<?php echo htmlspecialchars($signatureURL); ?>" alt="Signature" style="max-width: 100%;">
+                                <?php else: ?>
+                                    No signature available.
+                                <?php endif; ?>
                                 </td>
                             </tr>
                         </table>
@@ -351,10 +368,6 @@ $paymentMethod = $completedJob ? $completedJob['PaymentMethod'] : 'Not Specified
                                     <th>Paid Amount Transfer</th>
                                     <td>$<?php echo number_format($jobCharges['PaidAmountTransfer'], 2); ?></td>
                                 </tr>
-                                <tr>
-                                    <th>Final Payment method</th>
-                                    <td><?php echo htmlspecialchars($completedJob['PaymentMethod']); ?></td>
-                                </tr>
                             <?php else: ?>
                                 <tr>
                                     <td colspan="2">No job charges available.</td>
@@ -384,6 +397,10 @@ $paymentMethod = $completedJob ? $completedJob['PaymentMethod'] : 'Not Specified
                                 <tr>
                                     <th>Break Time</th>
                                     <td><?php echo htmlspecialchars($jobTimings['BreakTime']); ?> minutes</td>
+                                </tr>
+                                <tr>
+                                    <th>Final Payment method</th>
+                                    <td><?php echo htmlspecialchars($completedJob['PaymentMethod']); ?></td>
                                 </tr>
                             <?php else: ?>
                                 <tr>
