@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     }
 }
 
-// SQL query to fetch completed jobs and assigned employees from the BookingAssignments table
+// SQL query to fetch completed jobs and assigned employees from the BookingAssignments table, including PaymentMethod
 $query = "
     SELECT 
         cj.CompletionID,
@@ -44,6 +44,7 @@ $query = "
         jc.TotalLaborTime,
         jc.StartTime,
         jc.EndTime,
+        cj.PaymentMethod,  -- Fetch PaymentMethod from CompletedJobs table
         GROUP_CONCAT(e.Name SEPARATOR ', ') AS Team
     FROM CompletedJobs cj
     JOIN Bookings b ON cj.BookingID = b.BookingID
@@ -180,7 +181,8 @@ $stmt->close();
                                             <strong>Total Charge:</strong> $<?php echo htmlspecialchars(number_format($job['TotalCharge'], 2)); ?><br>
                                             <strong>Total Hours:</strong> <?php echo htmlspecialchars(number_format($job['TotalLaborTime'], 2)); ?> hours<br>
                                             <strong>Truck Size:</strong> <?php echo htmlspecialchars($job['TruckSize']); ?><br>
-                                            <strong>Hourly Rate:</strong> $<?php echo htmlspecialchars(number_format($job['Rate'], 2)); ?>
+                                            <strong>Hourly Rate:</strong> $<?php echo htmlspecialchars(number_format($job['Rate'], 2)); ?><br>
+                                            <strong>Payment Method:</strong> <?php echo htmlspecialchars($job['PaymentMethod']); ?><br>
                                         </p>
                                     </div>
                                 </div>
