@@ -80,30 +80,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['updateWorkHours'])) {
                 <?php foreach ($workHours as $work) : ?>
                     <div class="card mb-3">
                         <div class="card-header">
-                            Job Details: <?= htmlspecialchars($work['BookingName']) ?> (<?= htmlspecialchars($work['PickupLocation']) ?> to <?= htmlspecialchars($work['DropoffLocation']) ?>)
+                            <a class="collapsed card-link" data-toggle="collapse" href="#collapse<?= $work['WorkHoursID'] ?>">
+                                Job Details: <?= htmlspecialchars($work['BookingName']) ?> (<?= htmlspecialchars($work['PickupLocation']) ?> to <?= htmlspecialchars($work['DropoffLocation']) ?>)
+                            </a>
                         </div>
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label for="hoursWorked<?= $work['WorkHoursID'] ?>">Hours Worked</label>
-                                <input type="number" step="0.01" class="form-control" id="hoursWorked<?= $work['WorkHoursID'] ?>" name="hoursWorked" value="<?= htmlspecialchars($work['HoursWorked']) ?>" required>
+                        <div id="collapse<?= $work['WorkHoursID'] ?>" class="collapse">
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="hoursWorked<?= $work['WorkHoursID'] ?>">Hours Worked</label>
+                                    <input type="number" step="0.01" class="form-control" id="hoursWorked<?= $work['WorkHoursID'] ?>" name="hoursWorked" value="<?= htmlspecialchars($work['HoursWorked']) ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="payRate<?= $work['WorkHoursID'] ?>">Pay Rate</label>
+                                    <input type="number" step="0.01" class="form-control" id="payRate<?= $work['WorkHoursID'] ?>" name="payRate" value="<?= htmlspecialchars($work['PayRate']) ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="abn<?= $work['WorkHoursID'] ?>">ABN</label>
+                                    <input type="text" class="form-control" id="abn<?= $work['WorkHoursID'] ?>" name="abn" value="<?= htmlspecialchars($work['ABN']) ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="gst<?= $work['WorkHoursID'] ?>">GST</label>
+                                    <select class="form-control" id="gst<?= $work['WorkHoursID'] ?>" name="gst" required>
+                                        <option value="0" <?= $work['GST'] == 0 ? 'selected' : '' ?>>No</option>
+                                        <option value="1" <?= $work['GST'] == 1 ? 'selected' : '' ?>>Yes</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" name="workHoursID" value="<?= $work['WorkHoursID'] ?>">
+                                <button type="submit" name="updateWorkHours" class="btn btn-primary">Save Changes</button>
                             </div>
-                            <div class="form-group">
-                                <label for="payRate<?= $work['WorkHoursID'] ?>">Pay Rate</label>
-                                <input type="number" step="0.01" class="form-control" id="payRate<?= $work['WorkHoursID'] ?>" name="payRate" value="<?= htmlspecialchars($work['PayRate']) ?>" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="abn<?= $work['WorkHoursID'] ?>">ABN</label>
-                                <input type="text" class="form-control" id="abn<?= $work['WorkHoursID'] ?>" name="abn" value="<?= htmlspecialchars($work['ABN']) ?>" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="gst<?= $work['WorkHoursID'] ?>">GST</label>
-                                <select class="form-control" id="gst<?= $work['WorkHoursID'] ?>" name="gst" required>
-                                    <option value="0" <?= $work['GST'] == 0 ? 'selected' : '' ?>>No</option>
-                                    <option value="1" <?= $work['GST'] == 1 ? 'selected' : '' ?>>Yes</option>
-                                </select>
-                            </div>
-                            <input type="hidden" name="workHoursID" value="<?= $work['WorkHoursID'] ?>">
-                            <button type="submit" name="updateWorkHours" class="btn btn-primary">Save Changes</button>
                         </div>
                     </div>
                 <?php endforeach; ?>
