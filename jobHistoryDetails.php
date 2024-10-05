@@ -8,6 +8,11 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
     exit;
 }
 
+// Define base URLs for directories
+$baseURL = 'https://movers.alphamovers.com.au/signatures/';
+$baseTransferURL = 'https://movers.alphamovers.com.au/TransferImages/';
+$baseInvoiceURL = 'https://movers.alphamovers.com.au/Invoices/';
+
 // Get the BookingID from the URL
 $bookingID = isset($_GET['bookingID']) ? intval($_GET['bookingID']) : 0;
 if ($bookingID <= 0) {
@@ -160,7 +165,8 @@ $signatureFiles = glob($signatureFilePattern);
 $signatureFile = !empty($signatureFiles) ? $signatureFiles[0] : null;
 
 // Find transfer images
-$transferDir = 'https://movers.alphamovers.com.au/TransferImages/';
+//$transferDir = 'https://movers.alphamovers.com.au/TransferImages/';
+$transferDir = '/home/alphaard/movers.alphamovers.com.au/TransferImages/';
 $transferFilePattern = $transferDir . $bookingID . '_' . '*' . '.*';
 $transferFiles = glob($transferFilePattern);
 $transferImages = [];
@@ -175,11 +181,38 @@ foreach ($transferFiles as $file) {
         // Remove extension from timestamp
         $timestamp = preg_replace('/\.[^.]+$/', '', $timestampWithExt);
         $transferImages[] = [
-            'file' => $file,
+            'file' => $baseTransferURL . $filename,
             'amount' => $amount,
             'timestamp' => $timestamp
         ];
     }
+}
+
+// Handle invoice download request
+if (isset($_GET['action']) && $_GET['action'] === 'getInvoice') {
+    header('Content-Type: application/json');
+
+    $bookingID = isset($_GET['bookingID']) ? intval($_GET['bookingID']) : 0;
+
+    // Function to retrieve the invoice file using only bookingID
+    function getInvoiceFile($bookingID)
+    {
+        $invoiceDir = '/home/alphaard/movers.alphamovers.com.au/Invoices/';
+        $invoiceFilePattern = $invoiceDir . $bookingID . '_*_invoice.pdf';
+        $invoiceFiles = glob($invoiceFilePattern);
+        return !empty($invoiceFiles) ? $invoiceFiles[0] : null;
+    }
+
+    $invoiceFile = getInvoiceFile($bookingID);
+
+    if ($invoiceFile) {
+        // return download URL
+        echo json_encode(['invoiceFile' => $baseInvoiceURL . basename($invoiceFile)]);
+    } else {
+        echo json_encode(['invoiceFile' => null]);
+    }
+
+    exit(); // Stop further processing for the AJAX request
 }
 
 // Fetch payment method from CompletedJobs
@@ -302,6 +335,7 @@ $paymentMethod = $completedJob ? $completedJob['PaymentMethod'] : 'Not Specified
                             <tr>
                                 <th>Signature</th>
                                 <td>
+
                                     <!--
                                     <?php if ($signatureFile): ?>
                                         <img src="<?php echo htmlspecialchars($signatureFile); ?>" alt="Signature" style="max-width: 100%;">
@@ -310,6 +344,8 @@ $paymentMethod = $completedJob ? $completedJob['PaymentMethod'] : 'Not Specified
                                     <?php endif; ?>
                                     <?php if ($signatureFile): ?>
                               -->
+
+
                                     <?php
                                         // globe() returns file paths, not URLs, se we have to reconstruct URL as follows                                
                                         // Define the base URL to your signatures directory
@@ -408,6 +444,8 @@ $paymentMethod = $completedJob ? $completedJob['PaymentMethod'] : 'Not Specified
                                 </tr>
                             <?php endif; ?>
                         </table>
+                        <!-- Button to download the invoice -->
+                        <a id="downloadInvoiceBtn" class="btn btn-primary" href="#" onclick="downloadInvoice(<?php echo $bookingID; ?>)">Download Invoice</a>
                     </div>
                 </div>
                 <!-- Assigned Employees -->
@@ -549,6 +587,28 @@ $paymentMethod = $completedJob ? $completedJob['PaymentMethod'] : 'Not Specified
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        function downloadInvoice(bookingID) {
+            // Make an AJAX request to the same file (jobHistoryDetails.php) to retrieve the invoice file path
+            fetch(`jobHistoryDetails.php?action=getInvoice&bookingID=${bookingID}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.invoiceFile) {
+                        // If the invoice file is found, trigger the download
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = data.invoiceFile;
+                        downloadLink.download = data.invoiceFile.split('/').pop();
+                        downloadLink.click();
+                    } else {
+                        alert('No invoice found for this booking.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching invoice:', error);
+                    alert('Failed to retrieve the invoice. Please try again.');
+                });
+        }
+    </script>
 </body>
 
 </html>
