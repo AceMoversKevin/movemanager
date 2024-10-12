@@ -1,6 +1,5 @@
 <?php
 session_start();
-// Include db.php for database connection
 require 'db.php';
 
 // Check if the user is logged in, otherwise redirect to login page
@@ -9,7 +8,38 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
     exit;
 }
 
-// Include any necessary PHP code for handling backend logic
+// Function to save invoice data if the request is POST and contains the necessary data
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invoiceID'], $_POST['invoiceName'])) {
+    $invoiceID = $_POST['invoiceID'];
+    $invoiceName = $_POST['invoiceName'];
+
+    $sql = "INSERT INTO InvoiceCount (InvoiceID, InvoiceName) VALUES (?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('is', $invoiceID, $invoiceName);
+
+    $response = ['success' => false];
+    if ($stmt->execute()) {
+        $response['success'] = true;
+    }
+    $stmt->close();
+    $conn->close();
+
+    header('Content-Type: application/json');
+    echo json_encode($response);
+    exit;
+}
+
+// Retrieve the latest InvoiceID
+$sql = "SELECT MAX(InvoiceID) AS latestInvoiceID FROM InvoiceCount";
+$result = $conn->query($sql);
+
+$latestInvoiceID = 10979170; // Default value if no records exist
+if ($result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+    $latestInvoiceID = $row['latestInvoiceID'] + 1;
+}
+
+echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
 ?>
 
 <!DOCTYPE html>
@@ -29,31 +59,36 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
     <style>
         .invoice-container {
             overflow-y: auto;
-            /* Enable scrolling for content overflow */
+            background-color: #f5f5f5;
+            /* Slightly greyer background */
+            padding: 20px;
+            border-radius: 5px;
         }
 
         .invoice-box {
             max-width: 100%;
-            margin: 15px;
-            padding: 10px;
-            border: 1px solid #eee;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
-            font-size: 14px;
+            margin: 15px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            font-size: 15px;
             line-height: 1.6;
-            font-family: sans-serif;
-            color: #555;
+            font-family: Arial, sans-serif;
+            color: #333;
+            /* Darker text */
+            border-radius: 5px;
         }
 
         .invoice-box table {
             width: 100%;
+            border-collapse: collapse;
             line-height: inherit;
             text-align: left;
-            border-collapse: collapse;
-            /* Remove default table spacing */
         }
 
         .invoice-box table td {
-            padding: 5px;
+            padding: 8px;
             vertical-align: top;
         }
 
@@ -62,12 +97,13 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
         }
 
         .invoice-box table tr.top table td {
-            padding-bottom: 20px;
+            padding-bottom: 25px;
         }
 
         .invoice-box table tr.top table td.title {
-            font-size: 20px;
-            line-height: 1.2;
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
         }
 
         .top table {
@@ -80,44 +116,29 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
         }
 
         .top .title img {
-            max-width: 100%;
+            max-width: 80px;
+            /* Adjusted for a more proportional look */
             height: auto;
         }
 
-        .top .title {
-            width: 20%;
-            /* Adjust as needed */
-            display: inline-block;
-            vertical-align: middle;
-        }
-
         .top .invoice-details {
-            width: 80%;
-            /* Adjust as needed */
-            display: inline-block;
-            vertical-align: middle;
-        }
-
-        .invoice-box table tr.top table td.title img {
-            width: 100px;
-            /* Adjust logo size as needed */
-            max-width: 100%;
-            /* Ensure the logo scales down on small screens */
-        }
-
-        .invoice-box table tr.information table td {
-            padding-bottom: 20px;
-            /* Reduced for better fit */
+            font-size: 16px;
+            text-align: right;
+            color: #555;
         }
 
         .invoice-box table tr.heading td {
-            background: #eee;
-            border-bottom: 1px solid #ddd;
+            background: #f0f0f0;
+            /* Softer gray */
+            border-bottom: 1px solid #ccc;
             font-weight: bold;
+            color: #333;
+            padding: 10px;
         }
 
         .invoice-box table tr.item td {
             border-bottom: 1px solid #eee;
+            color: #555;
         }
 
         .invoice-box table tr.item.last td {
@@ -125,15 +146,27 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
         }
 
         .invoice-box table tr.total td:nth-child(2) {
-            border-top: 2px solid #eee;
+            border-top: 2px solid #ddd;
             font-weight: bold;
+            color: #333;
+            font-size: 16px;
         }
 
         .invoice-box p {
-            /* Style for the "For any queries..." paragraph */
-            font-size: 12px;
+            font-size: 13px;
+            color: #666;
             margin-top: 10px;
+            line-height: 1.5;
         }
+
+        .invoice-box table tr.information table td {
+            padding-bottom: 10px;
+        }
+
+        .invoice-box table tr.information td {
+            color: #333;
+        }
+    </style>
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
 </head>
@@ -153,8 +186,6 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
         <div class="row">
 
             <?php include 'navbar.php'; ?>
-
-            <!-- Main Content -->
             <!-- Main Content -->
             <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -189,8 +220,8 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
                                 <div class="form-group">
                                     <label for="gst">GST Included:</label>
                                     <select class="form-control" id="gst" name="gst">
-                                        <option value="0">No</option>
                                         <option value="1">Yes</option>
+                                        <option value="0">No</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -267,11 +298,11 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
                             <table>
                                 <tr>
                                     <td class="title">
-                                        <img src="https://i.postimg.cc/sfp6rLGY/cropped-200x76-1-161x86.png" alt="House moving logo" />
+                                        <img src="https://portal.alphamovers.com.au/logo.png" alt="House moving logo" />
                                     </td>
                                     ${gstIncluded ? 
                                         `<td class="invoice-details">
-                                            <b>INVOICE</b><br />
+                                            <b>INVOICE #${nextInvoiceID}</b><br />
                                             Moving Service
                                         </td>` : 
                                         `<td class="invoice-details">
@@ -367,14 +398,33 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
             document.getElementById('invoice-preview').innerHTML = invoiceHTML;
         }
 
+        // Save the invoice name upon download
         function downloadInvoice() {
             const element = document.getElementById('invoice-preview');
-            html2pdf().from(element).save('invoice.pdf');
+            html2pdf().from(element).save('invoice.pdf').then(() => {
+                const invoiceName = "Invoice #" + nextInvoiceID;
+
+                fetch('createInvoice.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `invoiceID=${nextInvoiceID}&invoiceName=${encodeURIComponent(invoiceName)}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Invoice saved successfully!');
+                        } else {
+                            alert('Failed to save the invoice.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            });
         }
     </script>
-
-
-
 
 </body>
 
