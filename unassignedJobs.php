@@ -344,6 +344,18 @@ $availableEmployees = $availableEmployeesResult->fetch_all(MYSQLI_ASSOC);
                                                         <button class="quick-assign btn btn-sm btn-secondary" data-value="150">150</button>
                                                     </span>
                                                 </p>
+                                                
+                                                <!-- Deposit field with quick assign buttons-->
+                                                <p><strong>Deposit:</strong>
+                                                    <span class="editable" data-field="Deposit" data-id="<?= $row['BookingID'] ?>">
+                                                        <?= !empty($row['Deposit']) ? htmlspecialchars($row['Deposit']) : 'Not assigned' ?>
+                                                    </span>
+                                                    <span class="quick-assign-buttons" id="depositQuickAssign<?= $row['BookingID'] ?>">
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="50">50</button>
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="100">100</button>
+                                                        <button class="quick-assign btn btn-sm btn-secondary" data-value="200">200</button>
+                                                    </span>
+                                                </p>
 
                                                 <!-- Full Additional Details -->
                                                 <p><strong>Additional Details:</strong></p>
