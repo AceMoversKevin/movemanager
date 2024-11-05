@@ -9,24 +9,100 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] != 'Admin' && $_SESSION['
 }
 
 // Function to save invoice data if the request is POST and contains the necessary data
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invoiceID'], $_POST['invoiceName'])) {
-    $invoiceID = $_POST['invoiceID'];
-    $invoiceName = $_POST['invoiceName'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle AJAX request to send email
+    if (isset($_POST['action']) && $_POST['action'] === 'sendEmail') {
+        // Get the posted data
+        $pdfData = $_POST['pdfData'] ?? null;
+        $clientEmail = $_POST['clientEmail'] ?? null;
+        $clientName = $_POST['clientName'] ?? null;
+        $invoiceID = $_POST['invoiceID'] ?? null;
 
-    $sql = "INSERT INTO InvoiceCount (InvoiceID, InvoiceName) VALUES (?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('is', $invoiceID, $invoiceName);
+        if (!$pdfData || !$clientEmail || !$clientName || !$invoiceID) {
+            echo json_encode(['success' => false, 'error' => 'Missing data']);
+            exit;
+        }
 
-    $response = ['success' => false];
-    if ($stmt->execute()) {
-        $response['success'] = true;
+        // Now, set up the SMTP2GO API call
+
+        $apiKey = 'api-297BE2CF446D45E690BE025D4C5BA67D'; // Replace with your SMTP2GO API key
+        $recipientEmail = $clientEmail;
+        $recipientName = $clientName;
+        $senderEmail = 'aaron@acemovers.com.au'; // Replace with your sender email
+        $senderName = 'Aaron Miller'; // Replace with your sender name
+        $subject = "Invoice for Booking #$invoiceID";
+        $body = "Dear $clientName,\n\nPlease find attached the invoice for your recent booking.\n\nBest regards,\nAce Movers";
+
+        $attachment = $pdfData; // base64 encoded PDF data
+
+        $data = [
+            'api_key' => $apiKey,
+            'to' => [
+                $recipientEmail
+            ],
+            'cc' => [
+                'info@acemovers.com.au' // Add the CC email address here
+            ],
+            'sender' => "$senderName <$senderEmail>",
+            'subject' => $subject,
+            'text_body' => $body,
+            'attachments' => [
+                [
+                    'filename' => 'invoice.pdf',
+                    'fileblob' => $attachment,
+                    'mimetype' => 'application/pdf'
+                ]
+            ]
+        ];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://api.smtp2go.com/v3/email/send');
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        $responseData = json_decode($response, true);
+
+        // Log the JSON response to the error log
+        error_log('SMTP2GO API Response: ' . json_encode($responseData));
+
+        if (isset($responseData['data']['succeeded']) && $responseData['data']['succeeded'] > 0) {
+            // Email sent successfully
+            echo json_encode(['success' => true]);
+        } else {
+            // Failed to send email
+            $errorMessage = $responseData['data']['errors'][0]['message'] ?? 'Unknown error';
+            echo json_encode(['success' => false, 'error' => $errorMessage]);
+        }
+        exit;
     }
-    $stmt->close();
-    $conn->close();
 
-    header('Content-Type: application/json');
-    echo json_encode($response);
-    exit;
+    // Handle saving invoice data
+    if (isset($_POST['invoiceID'], $_POST['invoiceName'])) {
+        $invoiceID = $_POST['invoiceID'];
+        $invoiceName = $_POST['invoiceName'];
+
+        $sql = "INSERT INTO InvoiceCount (InvoiceID, InvoiceName) VALUES (?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('is', $invoiceID, $invoiceName);
+
+        $response = ['success' => false];
+        if ($stmt->execute()) {
+            $response['success'] = true;
+        }
+        $stmt->close();
+        $conn->close();
+
+        header('Content-Type: application/json');
+        echo json_encode($response);
+        exit;
+    }
 }
 
 // Retrieve the latest InvoiceID
@@ -72,6 +148,8 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             width: 100%;
             max-width: 800px;
             margin: 20px auto;
+            padding: 20px;
+            /* Reduced padding */
             padding: 20px;
             /* Reduced padding */
             background-color: #fff;
@@ -247,7 +325,8 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             <?php include 'navbar.php'; ?>
             <!-- Main Content -->
             <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom no-print">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom no-print">
                     <h1 class="h2" id="Main-Heading">Create Invoice</h1>
                 </div>
                 <!-- Controls for toggling additional charges -->
@@ -283,9 +362,16 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 <div id="invoice-preview" class="invoice-box">
                     <!-- Editable Invoice content will be populated here by JavaScript -->
                 </div>
+                <!-- Buttons -->
                 <div class="text-center no-print">
-                    <button type="button" class="btn btn-success mt-3" onclick="downloadInvoice()">Download Invoice</button>
+                    <button type="button" class="btn btn-success mt-3" onclick="downloadInvoice()">Download
+                        Invoice</button>
+                    <button type="button" class="btn btn-primary mt-3 ml-2" onclick="sendInvoiceEmail()">Send
+                        Email</button>
                 </div>
+                <br>
+                <br>
+                <br>
             </main>
         </div>
     </div>
@@ -297,7 +383,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
     <!-- JavaScript code -->
     <script>
         // Initialize the invoice when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             generateInvoice(); // Populate with default values
             attachEventListeners(); // Attach event listeners to the checkboxes
         });
@@ -429,7 +515,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                     <!-- New Card Surcharge Row -->
                     <tr id="cardSurchargeRow" class="hidden">
                         <td colspan="2" style="text-align: right;">
-                        (includes 2.2% surcharge of $<span id="cardSurchargeAmount">0.00</span>)
+                        (includes 2% surcharge of $<span id="cardSurchargeAmount">0.00</span>)
                         </td>
                     </tr>
                     <tr class="status">
@@ -448,7 +534,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
 
             // Attach event listener for payment status stamp
             const paymentStatus = document.getElementById('paymentStatus');
-            paymentStatus.addEventListener('click', function() {
+            paymentStatus.addEventListener('click', function () {
                 if (this.innerText === 'PAID') {
                     this.innerText = 'UNPAID';
                     this.classList.remove('PAID');
@@ -466,7 +552,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             const editableFields = document.querySelectorAll('#invoice-preview [contenteditable="true"]');
             editableFields.forEach(field => {
                 field.addEventListener('input', recalculateTotals);
-                field.addEventListener('keydown', function(e) {
+                field.addEventListener('keydown', function (e) {
                     // Prevent entering invalid characters in number fields
                     const dataType = this.getAttribute('data-type');
                     if (dataType === 'number') {
@@ -482,17 +568,17 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             gstIncludedSelect.addEventListener('change', recalculateTotals);
 
             // For checkboxes
-            document.getElementById('toggleStairCharge').addEventListener('change', function() {
+            document.getElementById('toggleStairCharge').addEventListener('change', function () {
                 toggleChargeVisibility();
                 recalculateTotals();
             });
 
-            document.getElementById('togglePianoCharge').addEventListener('change', function() {
+            document.getElementById('togglePianoCharge').addEventListener('change', function () {
                 toggleChargeVisibility();
                 recalculateTotals();
             });
 
-            document.getElementById('togglePoolTableCharge').addEventListener('change', function() {
+            document.getElementById('togglePoolTableCharge').addEventListener('change', function () {
                 toggleChargeVisibility();
                 recalculateTotals();
             });
@@ -568,7 +654,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             let cardSurchargeAmount = 0;
             let totalCharge = totalChargeBeforeCardSurcharge;
             if (toggleCardSurcharge) {
-                cardSurchargeAmount = totalChargeBeforeCardSurcharge * 0.02263852;
+                cardSurchargeAmount = ((totalChargeBeforeCardSurcharge + deposit) * 0.02);
                 totalCharge += cardSurchargeAmount;
             }
 
@@ -653,12 +739,12 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
 
                 // Send data to the server to save the invoice record
                 fetch('createInvoice.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: `invoiceID=${nextInvoiceID}&invoiceName=${encodeURIComponent(invoiceName)}`
-                    })
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `invoiceID=${nextInvoiceID}&invoiceName=${encodeURIComponent(invoiceName)}`
+                })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -670,6 +756,116 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                     .catch(error => {
                         console.error('Error:', error);
                     });
+            });
+        }
+
+        function sendInvoiceEmail() {
+            // Before generating the PDF, ensure the invoice reflects the current state
+            recalculateTotals();
+
+            const element = document.getElementById('invoice-preview');
+            // Clone the element to avoid changes during PDF generation
+            const clonedElement = element.cloneNode(true);
+
+            // Remove contenteditable attributes
+            clonedElement.querySelectorAll('[contenteditable="true"]').forEach(el => {
+                el.removeAttribute('contenteditable');
+            });
+
+            // Replace select element with text
+            const gstIncludedSelect = clonedElement.querySelector('#gstIncluded');
+            const gstIncludedText = document.createElement('span');
+            gstIncludedText.innerText = gstIncludedSelect.value;
+            gstIncludedSelect.parentNode.replaceChild(gstIncludedText, gstIncludedSelect);
+
+            // Preserve display: none styles
+            clonedElement.querySelectorAll('[style]').forEach(el => {
+                const style = el.getAttribute('style');
+                if (style) {
+                    const styleRules = style.split(';').map(rule => rule.trim()).filter(rule => rule);
+                    const filteredRules = styleRules.filter(rule => rule.startsWith('display: none'));
+                    if (filteredRules.length > 0) {
+                        el.setAttribute('style', filteredRules.join(';') + ';');
+                    } else {
+                        el.removeAttribute('style');
+                    }
+                }
+            });
+
+            // Get client email and name
+            let clientEmail = document.getElementById('clientEmail').innerText.trim();
+            let clientName = document.getElementById('clientName').innerText.trim();
+            let invoiceID = nextInvoiceID;
+
+            if (!clientEmail) {
+                alert('Please enter the client email.');
+                return;
+            }
+
+            // Set options for html2pdf
+            var opt = {
+                margin: [10, 10, 10, 10], // top, left, bottom, right
+                filename: 'invoice.pdf', // filename is not important here
+                image: {
+                    type: 'jpeg',
+                    quality: 0.98
+                },
+                html2canvas: {
+                    scale: 2
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
+                }
+            };
+
+            // Disable the button to prevent multiple clicks
+            const sendEmailButton = document.querySelector('button[onclick="sendInvoiceEmail()"]');
+            sendEmailButton.disabled = true;
+            sendEmailButton.innerText = 'Sending...';
+
+            // Generate PDF from the cloned element and get the Blob
+            html2pdf().set(opt).from(clonedElement).outputPdf('blob').then(function (pdfBlob) {
+                // Read the Blob as base64
+                var reader = new FileReader();
+                reader.readAsDataURL(pdfBlob);
+                reader.onloadend = function () {
+                    var base64data = reader.result;
+                    // Remove the data URL prefix to get just the base64 string
+                    base64data = base64data.split(',')[1];
+
+                    // Prepare data to send
+                    var formData = new FormData();
+                    formData.append('action', 'sendEmail');
+                    formData.append('pdfData', base64data);
+                    formData.append('clientEmail', clientEmail);
+                    formData.append('clientName', clientName);
+                    formData.append('invoiceID', invoiceID);
+
+                    // Send the data via AJAX POST to the server
+                    fetch('createInvoice.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => response.json())
+                        .then(result => {
+                            sendEmailButton.disabled = false;
+                            sendEmailButton.innerText = 'Send Email';
+
+                            if (result.success) {
+                                alert('Email sent successfully!');
+                            } else {
+                                alert('Failed to send email: ' + result.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            sendEmailButton.disabled = false;
+                            sendEmailButton.innerText = 'Send Email';
+                            alert('An error occurred while sending email.');
+                        });
+                };
             });
         }
 
