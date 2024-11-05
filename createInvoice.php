@@ -367,6 +367,9 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                     <button type="button" class="btn btn-primary mt-3 ml-2" onclick="sendInvoiceEmail()">Send
                         Email</button>
                 </div>
+                <br>
+                <br>
+                <br>
             </main>
         </div>
     </div>
@@ -510,7 +513,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                     <!-- New Card Surcharge Row -->
                     <tr id="cardSurchargeRow" class="hidden">
                         <td colspan="2" style="text-align: right;">
-                        (includes 2.2% surcharge of $<span id="cardSurchargeAmount">0.00</span>)
+                        (includes 2% surcharge of $<span id="cardSurchargeAmount">0.00</span>)
                         </td>
                     </tr>
                     <tr class="status">
@@ -649,7 +652,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             let cardSurchargeAmount = 0;
             let totalCharge = totalChargeBeforeCardSurcharge;
             if (toggleCardSurcharge) {
-                cardSurchargeAmount = totalChargeBeforeCardSurcharge * 0.02263852;
+                cardSurchargeAmount = ((totalChargeBeforeCardSurcharge + deposit) * 0.02);
                 totalCharge += cardSurchargeAmount;
             }
 
