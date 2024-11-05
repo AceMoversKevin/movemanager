@@ -72,7 +72,8 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             width: 100%;
             max-width: 800px;
             margin: 20px auto;
-            padding: 30px;
+            padding: 20px;
+            /* Reduced padding */
             background-color: #fff;
             border: 1px solid #e0e0e0;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -81,13 +82,15 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
 
         .invoice-box table {
             width: 100%;
-            line-height: 1.6;
+            line-height: 1.4;
+            /* Adjusted line height */
             text-align: left;
             border-collapse: collapse;
         }
 
         .invoice-box table td {
-            padding: 8px;
+            padding: 5px;
+            /* Reduced padding */
             vertical-align: top;
         }
 
@@ -96,24 +99,28 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
         }
 
         .invoice-box table tr.top table td.title {
-            font-size: 36px;
+            font-size: 28px;
+            /* Reduced font size */
             color: #333;
         }
 
         .invoice-box table tr.information table td {
-            padding-bottom: 20px;
+            padding-bottom: 10px;
+            /* Reduced padding */
         }
 
         .invoice-box table tr.heading td {
             background: #f0f0f0;
             border-bottom: 1px solid #ddd;
             font-weight: bold;
-            padding: 10px;
+            padding: 8px;
+            /* Reduced padding */
         }
 
         .invoice-box table tr.item td {
             border-bottom: 1px solid #eee;
-            padding: 10px;
+            padding: 8px;
+            /* Reduced padding */
         }
 
         .invoice-box table tr.item.last td {
@@ -123,13 +130,16 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
         .invoice-box table tr.total td:nth-child(2) {
             border-top: 2px solid #f0f0f0;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 16px;
+            /* Reduced font size */
         }
 
         .invoice-box p {
-            font-size: 14px;
+            font-size: 12px;
+            /* Reduced font size */
             color: #555;
-            margin-top: 20px;
+            margin-top: 10px;
+            /* Reduced margin */
         }
 
         /* Editable Fields Styles */
@@ -148,13 +158,40 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
 
         /* Style for select elements */
         .invoice-box select {
-            font-size: 16px;
+            font-size: 14px;
+            /* Reduced font size */
             padding: 2px;
             border: none;
             background: transparent;
             outline: none;
             appearance: none;
             text-align-last: right;
+        }
+
+        /* Stamp styles */
+        .stamp {
+            display: inline-block;
+            padding: 8px 16px;
+            /* Reduced padding */
+            color: #fff;
+            border-radius: 5px;
+            user-select: none;
+            cursor: pointer;
+            font-size: 14px;
+            /* Reduced font size */
+        }
+
+        .stamp.PAID {
+            background-color: green;
+        }
+
+        .stamp.UNPAID {
+            background-color: red;
+        }
+
+        /* Hidden class to hide elements */
+        .hidden {
+            display: none;
         }
 
         /* Responsive styles */
@@ -234,6 +271,13 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                             Include Pool Table Charge
                         </label>
                     </div>
+                    <!-- New Card Surcharge Control -->
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleCardSurcharge">
+                        <label class="form-check-label" for="toggleCardSurcharge">
+                            Include Card Surcharge
+                        </label>
+                    </div>
                 </div>
                 <!-- Invoice Container -->
                 <div id="invoice-preview" class="invoice-box">
@@ -267,6 +311,9 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
         }
 
         function generateInvoice() {
+            const today = new Date();
+            const formattedDate = today.toLocaleDateString('en-AU'); // Australian date format
+
             const defaultValues = {
                 clientName: 'Client Name',
                 clientEmail: 'Email',
@@ -277,7 +324,8 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 stairCharges: '0.00',
                 pianoCharge: '0.00',
                 poolTableCharge: '0.00',
-                deposit: '0.00'
+                deposit: '0.00',
+                date: formattedDate
             };
 
             const invoiceHTML = `
@@ -287,11 +335,12 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                             <table>
                                 <tr>
                                     <td class="title">
-                                        <img src="https://portal.alphamovers.com.au/logo.png" alt="Company logo" style="width:100%; max-width:150px;">
+                                        <img src="https://portal.alphamovers.com.au/logo.png" alt="Company logo" style="width:100%; max-width:120px;">
                                     </td>
                                     <td class="invoice-details">
                                         <b>INVOICE #${nextInvoiceID}</b><br />
-                                        Moving Service
+                                        Moving Service<br />
+                                        <span id="invoiceDate" contenteditable="true" data-type="text">${defaultValues.date}</span>
                                     </td>
                                 </tr>
                             </table>
@@ -344,9 +393,10 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                             </select>
                         </td>
                     </tr>
+                    <!-- Replace Surcharge with GST Amount -->
                     <tr class="item">
-                        <td>Surcharge</td>
-                        <td>$<span id="surcharge">0.00</span></td>
+                        <td>GST Amount</td>
+                        <td>$<span id="gstAmount">0.00</span></td>
                     </tr>
                     <tbody id="additionalChargesSection">
                         <tr class="heading">
@@ -376,14 +426,39 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                         <td></td>
                         <td>Total: $<span id="totalCharge">0.00</span></td>
                     </tr>
+                    <!-- New Card Surcharge Row -->
+                    <tr id="cardSurchargeRow" class="hidden">
+                        <td colspan="2" style="text-align: right;">
+                        (includes 2.2% surcharge of $<span id="cardSurchargeAmount">0.00</span>)
+                        </td>
+                    </tr>
+                    <tr class="status">
+                        <td colspan="2" style="text-align: center;">
+                            <span id="paymentStatus" class="stamp PAID">PAID</span>
+                        </td>
+                    </tr>
                 </table>
                 <p>For any queries please contact us at info@acemovers.com.au or call us at 1300 136 735</p>
             `;
 
             document.getElementById('invoice-preview').innerHTML = invoiceHTML;
             makeFieldsEditable();
-            toggleChargeVisibility(); // Add this line to set initial visibility
+            toggleChargeVisibility();
             recalculateTotals();
+
+            // Attach event listener for payment status stamp
+            const paymentStatus = document.getElementById('paymentStatus');
+            paymentStatus.addEventListener('click', function() {
+                if (this.innerText === 'PAID') {
+                    this.innerText = 'UNPAID';
+                    this.classList.remove('PAID');
+                    this.classList.add('UNPAID');
+                } else {
+                    this.innerText = 'PAID';
+                    this.classList.remove('UNPAID');
+                    this.classList.add('PAID');
+                }
+            });
         }
 
         function attachEventListeners() {
@@ -406,7 +481,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             const gstIncludedSelect = document.getElementById('gstIncluded');
             gstIncludedSelect.addEventListener('change', recalculateTotals);
 
-            // For checkboxes (now outside the invoice preview)
+            // For checkboxes
             document.getElementById('toggleStairCharge').addEventListener('change', function() {
                 toggleChargeVisibility();
                 recalculateTotals();
@@ -421,6 +496,9 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 toggleChargeVisibility();
                 recalculateTotals();
             });
+
+            // Add this event listener for the card surcharge checkbox
+            document.getElementById('toggleCardSurcharge').addEventListener('change', recalculateTotals);
         }
 
         function toggleChargeVisibility() {
@@ -432,16 +510,34 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             const togglePianoCharge = document.getElementById('togglePianoCharge').checked;
             const togglePoolTableCharge = document.getElementById('togglePoolTableCharge').checked;
 
-            stairChargeRow.style.display = toggleStairCharge ? '' : 'none';
-            pianoChargeRow.style.display = togglePianoCharge ? '' : 'none';
-            poolTableChargeRow.style.display = togglePoolTableCharge ? '' : 'none';
+            stairChargeRow.classList.toggle('hidden', !toggleStairCharge);
+            pianoChargeRow.classList.toggle('hidden', !togglePianoCharge);
+            poolTableChargeRow.classList.toggle('hidden', !togglePoolTableCharge);
 
             // Control the display of the additional charges section header
             const additionalChargesSection = document.getElementById('additionalChargesSection');
             if (toggleStairCharge || togglePianoCharge || togglePoolTableCharge) {
-                additionalChargesSection.style.display = '';
+                additionalChargesSection.classList.remove('hidden');
             } else {
-                additionalChargesSection.style.display = 'none';
+                additionalChargesSection.classList.add('hidden');
+            }
+
+            // Adjust invoice layout to fit one page if no additional charges
+            adjustInvoiceLayout();
+        }
+
+        function adjustInvoiceLayout() {
+            const additionalChargesSection = document.getElementById('additionalChargesSection');
+            const invoiceBox = document.getElementById('invoice-preview');
+
+            if (additionalChargesSection.classList.contains('hidden')) {
+                // Adjust styles to fit one page
+                invoiceBox.style.padding = '20px';
+                invoiceBox.style.maxHeight = 'none';
+            } else {
+                // Reset styles if additional charges are included
+                invoiceBox.style.padding = '20px';
+                invoiceBox.style.maxHeight = 'none';
             }
         }
 
@@ -464,14 +560,33 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
 
             // Perform calculations
             const subTotal = calculateSubTotal(totalLaborTime, pianoCharge, poolTableCharge, rate, calloutFee);
-            const surcharge = gstIncluded ? subTotal * 0.10 : 0;
-            const totalCharge = subTotal + surcharge - deposit + stairCharges;
+            const gstAmount = gstIncluded ? subTotal * 0.10 : 0;
+            const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit + stairCharges;
+
+            // Calculate card surcharge if applicable
+            const toggleCardSurcharge = document.getElementById('toggleCardSurcharge').checked;
+            let cardSurchargeAmount = 0;
+            let totalCharge = totalChargeBeforeCardSurcharge;
+            if (toggleCardSurcharge) {
+                cardSurchargeAmount = totalChargeBeforeCardSurcharge * 0.02263852;
+                totalCharge += cardSurchargeAmount;
+            }
 
             // Update the invoice display
             document.getElementById('subTotal').innerText = subTotal.toFixed(2);
-            document.getElementById('surcharge').innerText = surcharge.toFixed(2);
+            document.getElementById('gstAmount').innerText = gstAmount.toFixed(2);
             document.getElementById('totalCharge').innerText = totalCharge.toFixed(2);
+
+            // Show or hide the card surcharge row using the 'hidden' class
+            const cardSurchargeRow = document.getElementById('cardSurchargeRow');
+            if (toggleCardSurcharge) {
+                document.getElementById('cardSurchargeAmount').innerText = cardSurchargeAmount.toFixed(2);
+                cardSurchargeRow.classList.remove('hidden'); // Remove 'hidden' to show the row
+            } else {
+                cardSurchargeRow.classList.add('hidden'); // Add 'hidden' to hide the row
+            }
         }
+
 
         function downloadInvoice() {
             // Before generating the PDF, ensure the invoice reflects the current state
@@ -492,15 +607,32 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             gstIncludedText.innerText = gstIncludedSelect.value;
             gstIncludedSelect.parentNode.replaceChild(gstIncludedText, gstIncludedSelect);
 
-            // Remove any style attributes added for display purposes
+            // Preserve display: none styles
             clonedElement.querySelectorAll('[style]').forEach(el => {
-                el.removeAttribute('style');
+                const style = el.getAttribute('style');
+                if (style) {
+                    const styleRules = style.split(';').map(rule => rule.trim()).filter(rule => rule);
+                    const filteredRules = styleRules.filter(rule => rule.startsWith('display: none'));
+                    if (filteredRules.length > 0) {
+                        el.setAttribute('style', filteredRules.join(';') + ';');
+                    } else {
+                        el.removeAttribute('style');
+                    }
+                }
             });
+
+            // Get client name for the filename
+            let clientName = document.getElementById('clientName').innerText.trim();
+            if (!clientName) {
+                clientName = 'invoice';
+            }
+            // Sanitize client name to remove invalid filename characters
+            clientName = clientName.replace(/[<>:"\/\\|?*]+/g, '').replace(/\s+/g, '_');
 
             // Set options for html2pdf
             var opt = {
                 margin: [10, 10, 10, 10], // top, left, bottom, right
-                filename: 'invoice.pdf',
+                filename: clientName + '.pdf',
                 image: {
                     type: 'jpeg',
                     quality: 0.98
