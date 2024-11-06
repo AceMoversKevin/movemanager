@@ -30,8 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $recipientName = $clientName;
         $senderEmail = 'aaron@acemovers.com.au'; // Replace with your sender email
         $senderName = 'Aaron Miller'; // Replace with your sender name
-        $subject = "Invoice for Booking #$invoiceID";
-        $body = "Dear $clientName,\n\nPlease find attached the invoice for your recent booking.\n\nBest regards,\nAce Movers";
+        $subject = "Invoice for Move #$invoiceID";
+        $body = "Dear $clientName,\n\nPlease find attached the invoice for your recent move.\n\nBest regards,\nAce Movers";
 
         $attachment = $pdfData; // base64 encoded PDF data
 
