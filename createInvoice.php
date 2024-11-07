@@ -30,8 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $recipientName = $clientName;
         $senderEmail = 'aaron@acemovers.com.au'; // Replace with your sender email
         $senderName = 'Aaron Miller'; // Replace with your sender name
-        $subject = "Invoice for Move #$invoiceID";
-        $body = "Dear $clientName,\n\nPlease find attached the invoice for your recent move.\n\nBest regards,\nAce Movers";
+        $subject = "Invoice for Booking #$invoiceID";
+        $body = "Dear $clientName,\n\nPlease find attached the invoice for your recent booking.\n\nBest regards,\nAce Movers";
 
         $attachment = $pdfData; // base64 encoded PDF data
 
@@ -329,8 +329,16 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                     class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom no-print">
                     <h1 class="h2" id="Main-Heading">Create Invoice</h1>
                 </div>
-                <!-- Controls for toggling additional charges -->
+                <!-- Controls for selecting invoice type and toggling additional charges -->
                 <div class="controls no-print">
+                    <h4>Invoice Type</h4>
+                    <div class="form-group">
+                        <label for="invoiceTypeSelect">Select Invoice Type:</label>
+                        <select id="invoiceTypeSelect" class="form-control" onchange="generateInvoice()">
+                            <option value="variable">Variable Price Invoice</option>
+                            <option value="fixed">Fixed Price Invoice</option>
+                        </select>
+                    </div>
                     <h4>Additional Charges</h4>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="toggleStairCharge">
@@ -355,6 +363,13 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                         <input class="form-check-input" type="checkbox" id="toggleCardSurcharge">
                         <label class="form-check-label" for="toggleCardSurcharge">
                             Include Card Surcharge
+                        </label>
+                    </div>
+                    <!-- Miscellaneous Charge Control -->
+                    <div class="form-check hidden" id="toggleMiscChargeContainer">
+                        <input class="form-check-input" type="checkbox" id="toggleMiscCharge">
+                        <label class="form-check-label" for="toggleMiscCharge">
+                            Include Miscellaneous Charge
                         </label>
                     </div>
                 </div>
@@ -388,33 +403,23 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             attachEventListeners(); // Attach event listeners to the checkboxes
         });
 
-        function calculateSubTotal(totalLaborTime, pianoCharge, poolTableCharge, rate, calloutFee) {
-            return (totalLaborTime + pianoCharge + poolTableCharge + calloutFee) * rate;
-        }
-
         function isGSTIncluded(gstValue) {
             return gstValue.trim().toLowerCase() === 'yes';
         }
 
         function generateInvoice() {
+            const invoiceType = document.getElementById('invoiceTypeSelect').value;
             const today = new Date();
             const formattedDate = today.toLocaleDateString('en-AU'); // Australian date format
 
             const defaultValues = {
                 clientName: 'Client Name',
                 clientEmail: 'Email',
-                totalLaborTime: '0.00',
-                calloutFee: '0.00',
-                rate: '0.00',
-                gstIncluded: 'Yes',
-                stairCharges: '0.00',
-                pianoCharge: '0.00',
-                poolTableCharge: '0.00',
-                deposit: '0.00',
                 date: formattedDate
             };
 
-            const invoiceHTML = `
+            // Common invoice HTML parts
+            const commonInvoiceHTML = `
                 <table>
                     <tr class="top">
                         <td colspan="2">
@@ -448,23 +453,88 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                             </table>
                         </td>
                     </tr>
+            `;
+
+            // Additional charges section, common to both invoice types
+            const additionalChargesHTML = `
+                <tbody id="additionalChargesSection">
+                    <tr class="heading">
+                        <td colspan="2">Additional Charges</td>
+                    </tr>
+                    <tr class="item" id="stairChargeRow">
+                        <td>Stair Charge</td>
+                        <td>$<span id="stairCharges" contenteditable="true" data-type="number">0.00</span></td>
+                    </tr>
+                    <tr class="item" id="pianoChargeRow">
+                        <td>Piano Charge</td>
+                        <td>$<span id="pianoCharge" contenteditable="true" data-type="number">0.00</span></td>
+                    </tr>
+                    <tr class="item" id="poolTableChargeRow">
+                        <td>Pool Table Charge</td>
+                        <td>$<span id="poolTableCharge" contenteditable="true" data-type="number">0.00</span></td>
+                    </tr>
+                    <!-- For fixed price invoice, include custom miscellaneous charge -->
+                    ${invoiceType === 'fixed' ? `
+                    <tr class="item" id="miscChargeRow">
+                        <td><span id="miscChargeName" contenteditable="true" data-type="text">Miscellaneous Charge</span></td>
+                        <td>$<span id="miscChargeAmount" contenteditable="true" data-type="number">0.00</span></td>
+                    </tr>
+                    ` : ''}
+                </tbody>
+            `;
+
+            // Common footer and total
+            const commonFooterHTML = `
+                <tr class="heading">
+                    <td colspan="2">Deposit</td>
+                </tr>
+                <tr class="item last">
+                    <td>Initial Deposit Adjustment</td>
+                    <td>-$<span id="deposit" contenteditable="true" data-type="number">0.00</span></td>
+                </tr>
+                <tr class="total">
+                    <td></td>
+                    <td>Total: $<span id="totalCharge">0.00</span></td>
+                </tr>
+                <!-- New Card Surcharge Row -->
+                <tr id="cardSurchargeRow" class="hidden">
+                    <td colspan="2" style="text-align: right;">
+                    (includes 2% surcharge of $<span id="cardSurchargeAmount">0.00</span>)
+                    </td>
+                </tr>
+                <tr class="status">
+                    <td colspan="2" style="text-align: center;">
+                        <span id="paymentStatus" class="stamp PAID">PAID</span>
+                    </td>
+                </tr>
+                </table>
+                <p>For any queries please contact us at info@acemovers.com.au or call us at 1300 136 735</p>
+            `;
+
+            let invoiceHTML = '';
+
+            if (invoiceType === 'variable') {
+                // Generate variable price invoice
+                invoiceHTML = `
+                    ${commonInvoiceHTML}
+                    <!-- Variable Invoice Specific Rows -->
                     <tr class="heading">
                         <td colspan="2">Timing</td>
                     </tr>
                     <tr class="item">
                         <td>Total Work Hours</td>
-                        <td><span id="totalLaborTime" contenteditable="true" data-type="number">${defaultValues.totalLaborTime}</span> hours</td>
+                        <td><span id="totalLaborTime" contenteditable="true" data-type="number">0.00</span> hours</td>
                     </tr>
                     <tr class="item">
                         <td>Callout Fee</td>
-                        <td><span id="calloutFee" contenteditable="true" data-type="number">${defaultValues.calloutFee}</span> hour(s)</td>
+                        <td><span id="calloutFee" contenteditable="true" data-type="number">0.00</span> hour(s)</td>
                     </tr>
                     <tr class="heading">
                         <td colspan="2">Rate</td>
                     </tr>
                     <tr class="item">
                         <td>Per Hour Rate</td>
-                        <td>$<span id="rate" contenteditable="true" data-type="number">${defaultValues.rate}</span></td>
+                        <td>$<span id="rate" contenteditable="true" data-type="number">0.00</span></td>
                     </tr>
                     <tr class="item">
                         <td>SubTotal</td>
@@ -474,63 +544,66 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                         <td>GST Included</td>
                         <td>
                             <select id="gstIncluded" data-type="select">
-                                <option value="Yes" ${defaultValues.gstIncluded === 'Yes' ? 'selected' : ''}>Yes</option>
-                                <option value="No" ${defaultValues.gstIncluded === 'No' ? 'selected' : ''}>No</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
                             </select>
                         </td>
                     </tr>
-                    <!-- Replace Surcharge with GST Amount -->
                     <tr class="item">
                         <td>GST Amount</td>
                         <td>$<span id="gstAmount">0.00</span></td>
                     </tr>
-                    <tbody id="additionalChargesSection">
-                        <tr class="heading">
-                            <td colspan="2">Additional Charges</td>
-                        </tr>
-                        <tr class="item" id="stairChargeRow">
-                            <td>Stair Charge</td>
-                            <td>$<span id="stairCharges" contenteditable="true" data-type="number">${defaultValues.stairCharges}</span></td>
-                        </tr>
-                        <tr class="item" id="pianoChargeRow">
-                            <td>Piano Charge</td>
-                            <td><span id="pianoCharge" contenteditable="true" data-type="number">${defaultValues.pianoCharge}</span> hours</td>
-                        </tr>
-                        <tr class="item" id="poolTableChargeRow">
-                            <td>Pool Table Charge</td>
-                            <td><span id="poolTableCharge" contenteditable="true" data-type="number">${defaultValues.poolTableCharge}</span> hours</td>
-                        </tr>
-                    </tbody>
+                    ${additionalChargesHTML}
+                    ${commonFooterHTML}
+                `;
+            } else if (invoiceType === 'fixed') {
+                // Generate fixed price invoice
+                invoiceHTML = `
+                    ${commonInvoiceHTML}
+                    <!-- Fixed Invoice Specific Rows -->
                     <tr class="heading">
-                        <td colspan="2">Deposit</td>
+                        <td colspan="2">Charges</td>
                     </tr>
-                    <tr class="item last">
-                        <td>Initial Deposit Adjustment</td>
-                        <td>-$<span id="deposit" contenteditable="true" data-type="number">${defaultValues.deposit}</span></td>
+                    <tr class="item">
+                        <td>Total Initial Charge</td>
+                        <td>$<span id="totalInitialCharge" contenteditable="true" data-type="number">0.00</span></td>
                     </tr>
-                    <tr class="total">
-                        <td></td>
-                        <td>Total: $<span id="totalCharge">0.00</span></td>
+                    <tr class="item">
+                        <td>SubTotal</td>
+                        <td>$<span id="subTotal">0.00</span></td>
                     </tr>
-                    <!-- New Card Surcharge Row -->
-                    <tr id="cardSurchargeRow" class="hidden">
-                        <td colspan="2" style="text-align: right;">
-                        (includes 2% surcharge of $<span id="cardSurchargeAmount">0.00</span>)
+                    <tr class="item">
+                        <td>GST Included</td>
+                        <td>
+                            <select id="gstIncluded" data-type="select">
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
                         </td>
                     </tr>
-                    <tr class="status">
-                        <td colspan="2" style="text-align: center;">
-                            <span id="paymentStatus" class="stamp PAID">PAID</span>
-                        </td>
+                    <tr class="item">
+                        <td>GST Amount</td>
+                        <td>$<span id="gstAmount">0.00</span></td>
                     </tr>
-                </table>
-                <p>For any queries please contact us at info@acemovers.com.au or call us at 1300 136 735</p>
-            `;
+                    ${additionalChargesHTML}
+                    ${commonFooterHTML}
+                `;
+            }
 
             document.getElementById('invoice-preview').innerHTML = invoiceHTML;
             makeFieldsEditable();
             toggleChargeVisibility();
             recalculateTotals();
+
+            // Show or hide the 'Include Miscellaneous Charge' checkbox based on invoice type
+            const toggleMiscChargeContainer = document.getElementById('toggleMiscChargeContainer');
+            const toggleMiscCharge = document.getElementById('toggleMiscCharge');
+            if (invoiceType === 'fixed') {
+                toggleMiscChargeContainer.classList.remove('hidden');
+            } else {
+                toggleMiscChargeContainer.classList.add('hidden');
+                toggleMiscCharge.checked = false;
+            }
 
             // Attach event listener for payment status stamp
             const paymentStatus = document.getElementById('paymentStatus');
@@ -585,24 +658,36 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
 
             // Add this event listener for the card surcharge checkbox
             document.getElementById('toggleCardSurcharge').addEventListener('change', recalculateTotals);
+
+            // Event listener for the miscellaneous charge checkbox
+            document.getElementById('toggleMiscCharge').addEventListener('change', function () {
+                toggleChargeVisibility();
+                recalculateTotals();
+            });
         }
 
         function toggleChargeVisibility() {
             const stairChargeRow = document.getElementById('stairChargeRow');
             const pianoChargeRow = document.getElementById('pianoChargeRow');
             const poolTableChargeRow = document.getElementById('poolTableChargeRow');
+            const miscChargeRow = document.getElementById('miscChargeRow');
 
             const toggleStairCharge = document.getElementById('toggleStairCharge').checked;
             const togglePianoCharge = document.getElementById('togglePianoCharge').checked;
             const togglePoolTableCharge = document.getElementById('togglePoolTableCharge').checked;
+            const toggleMiscCharge = document.getElementById('toggleMiscCharge').checked;
 
             stairChargeRow.classList.toggle('hidden', !toggleStairCharge);
             pianoChargeRow.classList.toggle('hidden', !togglePianoCharge);
             poolTableChargeRow.classList.toggle('hidden', !togglePoolTableCharge);
 
+            if (miscChargeRow) {
+                miscChargeRow.classList.toggle('hidden', !toggleMiscCharge);
+            }
+
             // Control the display of the additional charges section header
             const additionalChargesSection = document.getElementById('additionalChargesSection');
-            if (toggleStairCharge || togglePianoCharge || togglePoolTableCharge) {
+            if (toggleStairCharge || togglePianoCharge || togglePoolTableCharge || toggleMiscCharge) {
                 additionalChargesSection.classList.remove('hidden');
             } else {
                 additionalChargesSection.classList.add('hidden');
@@ -628,28 +713,68 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
         }
 
         function recalculateTotals() {
-            // Retrieve values from the invoice
-            const totalLaborTime = parseFloat(document.getElementById('totalLaborTime').innerText) || 0;
-            const calloutFee = parseFloat(document.getElementById('calloutFee').innerText) || 0;
-            const rate = parseFloat(document.getElementById('rate').innerText) || 0;
-            const gstIncluded = isGSTIncluded(document.getElementById('gstIncluded').value);
-            const deposit = parseFloat(document.getElementById('deposit').innerText) || 0;
+            const invoiceType = document.getElementById('invoiceTypeSelect').value;
 
-            // Additional charges
-            const toggleStairCharge = document.getElementById('toggleStairCharge').checked;
-            const togglePianoCharge = document.getElementById('togglePianoCharge').checked;
-            const togglePoolTableCharge = document.getElementById('togglePoolTableCharge').checked;
+            if (invoiceType === 'variable') {
+                // Variable price invoice calculations
+                // Retrieve values from the invoice
+                const totalLaborTime = parseFloat(document.getElementById('totalLaborTime').innerText) || 0;
+                const calloutFee = parseFloat(document.getElementById('calloutFee').innerText) || 0;
+                const rate = parseFloat(document.getElementById('rate').innerText) || 0;
+                const gstIncluded = isGSTIncluded(document.getElementById('gstIncluded').value);
+                const deposit = parseFloat(document.getElementById('deposit').innerText) || 0;
 
-            const stairCharges = toggleStairCharge ? (parseFloat(document.getElementById('stairCharges').innerText) || 0) : 0;
-            const pianoCharge = togglePianoCharge ? (parseFloat(document.getElementById('pianoCharge').innerText) || 0) : 0;
-            const poolTableCharge = togglePoolTableCharge ? (parseFloat(document.getElementById('poolTableCharge').innerText) || 0) : 0;
+                // Additional charges
+                const stairCharges = getAdditionalCharge('stairCharges', 'toggleStairCharge');
+                const pianoCharge = getAdditionalCharge('pianoCharge', 'togglePianoCharge');
+                const poolTableCharge = getAdditionalCharge('poolTableCharge', 'togglePoolTableCharge');
 
-            // Perform calculations
-            const subTotal = calculateSubTotal(totalLaborTime, pianoCharge, poolTableCharge, rate, calloutFee);
-            const gstAmount = gstIncluded ? subTotal * 0.10 : 0;
-            const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit + stairCharges;
+                // Perform calculations
+                const subTotal = (totalLaborTime + calloutFee + pianoCharge + poolTableCharge + stairCharges) * rate;
+                const gstAmount = gstIncluded ? subTotal * 0.10 : 0;
+                const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit;
 
-            // Calculate card surcharge if applicable
+                // Calculate card surcharge if applicable
+                const totalCharge = calculateTotalWithCardSurcharge(totalChargeBeforeCardSurcharge, deposit);
+
+                // Update the invoice display
+                updateInvoiceDisplay(subTotal, gstAmount, totalCharge);
+
+            } else if (invoiceType === 'fixed') {
+                // Fixed price invoice calculations
+                // Retrieve values from the invoice
+                const totalInitialCharge = parseFloat(document.getElementById('totalInitialCharge').innerText) || 0;
+                const gstIncluded = isGSTIncluded(document.getElementById('gstIncluded').value);
+                const deposit = parseFloat(document.getElementById('deposit').innerText) || 0;
+
+                // Additional charges
+                const stairCharges = getAdditionalCharge('stairCharges', 'toggleStairCharge');
+                const pianoChargeAmount = getAdditionalCharge('pianoCharge', 'togglePianoCharge');
+                const poolTableChargeAmount = getAdditionalCharge('poolTableCharge', 'togglePoolTableCharge');
+
+                // Miscellaneous charge
+                const toggleMiscCharge = document.getElementById('toggleMiscCharge').checked;
+                const miscChargeAmount = toggleMiscCharge ? (parseFloat(document.getElementById('miscChargeAmount').innerText) || 0) : 0;
+
+                // Perform calculations
+                const subTotal = totalInitialCharge + pianoChargeAmount + poolTableChargeAmount + stairCharges + miscChargeAmount;
+                const gstAmount = gstIncluded ? subTotal * 0.10 : 0;
+                const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit;
+
+                // Calculate card surcharge if applicable
+                const totalCharge = calculateTotalWithCardSurcharge(totalChargeBeforeCardSurcharge, deposit);
+
+                // Update the invoice display
+                updateInvoiceDisplay(subTotal, gstAmount, totalCharge);
+            }
+        }
+
+        function getAdditionalCharge(fieldId, toggleId) {
+            const isToggled = document.getElementById(toggleId).checked;
+            return isToggled ? (parseFloat(document.getElementById(fieldId).innerText) || 0) : 0;
+        }
+
+        function calculateTotalWithCardSurcharge(totalChargeBeforeCardSurcharge, deposit) {
             const toggleCardSurcharge = document.getElementById('toggleCardSurcharge').checked;
             let cardSurchargeAmount = 0;
             let totalCharge = totalChargeBeforeCardSurcharge;
@@ -657,11 +782,6 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 cardSurchargeAmount = ((totalChargeBeforeCardSurcharge + deposit) * 0.02);
                 totalCharge += cardSurchargeAmount;
             }
-
-            // Update the invoice display
-            document.getElementById('subTotal').innerText = subTotal.toFixed(2);
-            document.getElementById('gstAmount').innerText = gstAmount.toFixed(2);
-            document.getElementById('totalCharge').innerText = totalCharge.toFixed(2);
 
             // Show or hide the card surcharge row using the 'hidden' class
             const cardSurchargeRow = document.getElementById('cardSurchargeRow');
@@ -671,8 +791,14 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
             } else {
                 cardSurchargeRow.classList.add('hidden'); // Add 'hidden' to hide the row
             }
+            return totalCharge;
         }
 
+        function updateInvoiceDisplay(subTotal, gstAmount, totalCharge) {
+            document.getElementById('subTotal').innerText = subTotal.toFixed(2);
+            document.getElementById('gstAmount').innerText = gstAmount.toFixed(2);
+            document.getElementById('totalCharge').innerText = totalCharge.toFixed(2);
+        }
 
         function downloadInvoice() {
             // Before generating the PDF, ensure the invoice reflects the current state
@@ -892,6 +1018,12 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 field.setAttribute('contenteditable', 'true');
                 field.addEventListener('input', recalculateTotals);
             });
+
+            // Attach change event for GST select
+            const gstIncludedSelect = document.getElementById('gstIncluded');
+            if (gstIncludedSelect) {
+                gstIncludedSelect.addEventListener('change', recalculateTotals);
+            }
         }
     </script>
 </body>

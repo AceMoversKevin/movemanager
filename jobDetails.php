@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['notifyEmployees'])) {
     }
     $stmt->close();
 
-    $apiKey = 'YOUR_SMTP2GO_API_KEY'; // Replace with your SMTP2GO API key
+    $apiKey = 'api-297BE2CF446D45E690BE025D4C5BA67D'; // Replace with your SMTP2GO API key
     $recipientEmails = explode(', ', $jobDetails['EmployeeEmails']);
     $senderEmail = 'aaron@acemovers.com.au';
     $senderName = 'Aaron Miller';
@@ -242,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     file_put_contents($pdfFilePath, $pdfContent);
 
     // Send the email using SMTP2GO Email API
-    $apiKey = 'YOUR_SMTP2GO_API_KEY'; // Replace with your SMTP2GO API key
+    $apiKey = 'api-297BE2CF446D45E690BE025D4C5BA67D'; // Replace with your SMTP2GO API key
     $recipientEmail = $clientEmail;
     $recipientName = $clientName;
     $senderEmail = 'aaron@acemovers.com.au'; // Replace with your sender email
@@ -590,7 +590,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                     <h1 class="h2" id="Main-Heading">Details for the Job</h1>
                 </div>
 
-                <?php if (!empty($jobDetails)) : ?>
+                <?php if (!empty($jobDetails)): ?>
                     <div class="row">
                         <div class="col-md-6">
                             <h3>Move Details</h3>
@@ -599,19 +599,21 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                             <p><strong>Email:</strong> <?php echo htmlspecialchars($jobDetails['BookingEmail']); ?></p>
                             <p><strong>Rate:</strong> $<?php echo htmlspecialchars($jobDetails['Rate']); ?>/hr</p>
                             <p><strong>Deposit:</strong> $<?php echo htmlspecialchars($jobDetails['Deposit']); ?></p>
-                            <p><strong>Start Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingStartTime']); ?></p>
+                            <p><strong>Start Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingStartTime']); ?>
+                            </p>
                         </div>
 
                         <div class="col-md-6">
                             <h3>Additional Charges</h3>
                             <ul>
-                                <?php if ($jobDetails['JobStairCharge'] != 0) : ?>
+                                <?php if ($jobDetails['JobStairCharge'] != 0): ?>
                                     <li>Stair Charges: $<?php echo number_format($jobDetails['JobStairCharge'], 2); ?></li>
                                 <?php endif; ?>
-                                <?php if ($jobDetails['JobPoolTableCharge'] != 0) : ?>
-                                    <li>Pool Table Charges: $<?php echo number_format($jobDetails['JobPoolTableCharge'], 2); ?></li>
+                                <?php if ($jobDetails['JobPoolTableCharge'] != 0): ?>
+                                    <li>Pool Table Charges: $<?php echo number_format($jobDetails['JobPoolTableCharge'], 2); ?>
+                                    </li>
                                 <?php endif; ?>
-                                <?php if ($jobDetails['JobPianoCharge'] != 0) : ?>
+                                <?php if ($jobDetails['JobPianoCharge'] != 0): ?>
                                     <li>Piano Charges: $<?php echo number_format($jobDetails['JobPianoCharge'], 2); ?></li>
                                 <?php endif; ?>
                             </ul>
@@ -625,12 +627,18 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                                     Job Timings
                                 </div>
                                 <div class="card-body">
-                                    <p><strong>Timing ID:</strong> <?php echo htmlspecialchars($jobDetails['TimingID']); ?></p>
-                                    <p><strong>Start Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingStartTime']); ?></p>
-                                    <p><strong>End Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingEndTime']); ?></p>
-                                    <p><strong>Is Complete:</strong> <?php echo htmlspecialchars($jobDetails['TimingIsComplete'] ? 'Yes' : 'No'); ?></p>
-                                    <p><strong>Break Time:</strong> <?php echo htmlspecialchars($jobDetails['TimingBreakTime']); ?></p>
-                                    <p><strong>Is Confirmed:</strong> <?php echo htmlspecialchars($jobDetails['TimingIsConfirmed'] ? 'Yes' : 'No'); ?></p>
+                                    <p><strong>Timing ID:</strong> <?php echo htmlspecialchars($jobDetails['TimingID']); ?>
+                                    </p>
+                                    <p><strong>Start Time:</strong>
+                                        <?php echo htmlspecialchars($jobDetails['TimingStartTime']); ?></p>
+                                    <p><strong>End Time:</strong>
+                                        <?php echo htmlspecialchars($jobDetails['TimingEndTime']); ?></p>
+                                    <p><strong>Is Complete:</strong>
+                                        <?php echo htmlspecialchars($jobDetails['TimingIsComplete'] ? 'Yes' : 'No'); ?></p>
+                                    <p><strong>Break Time:</strong>
+                                        <?php echo htmlspecialchars($jobDetails['TimingBreakTime']); ?></p>
+                                    <p><strong>Is Confirmed:</strong>
+                                        <?php echo htmlspecialchars($jobDetails['TimingIsConfirmed'] ? 'Yes' : 'No'); ?></p>
                                 </div>
                             </div>
                         </div>
@@ -641,12 +649,16 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                                     Assigned Employees
                                 </div>
                                 <div class="card-body">
-                                    <p><strong>Names:</strong> <?php echo htmlspecialchars($jobDetails['EmployeeNames']); ?></p>
-                                    <p><strong>Emails:</strong> <?php echo htmlspecialchars($jobDetails['EmployeeEmails']); ?></p>
-                                    <button type="button" class="btn btn-outline-info" id="editEmployee">Edit Employees</button>
+                                    <p><strong>Names:</strong> <?php echo htmlspecialchars($jobDetails['EmployeeNames']); ?>
+                                    </p>
+                                    <p><strong>Emails:</strong>
+                                        <?php echo htmlspecialchars($jobDetails['EmployeeEmails']); ?></p>
+                                    <button type="button" class="btn btn-outline-info" id="editEmployee">Edit
+                                        Employees</button>
                                     <form method="POST" action="jobDetails.php?BookingID=<?php echo $bookingID; ?>">
                                         <input type="hidden" name="bookingID" value="<?php echo $bookingID; ?>">
-                                        <button type="submit" class="btn btn-outline-warning" name="notifyEmployees">Notify Employees</button>
+                                        <button type="submit" class="btn btn-outline-warning" name="notifyEmployees">Notify
+                                            Employees</button>
                                     </form>
                                 </div>
                             </div>
@@ -708,12 +720,14 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                         </div>
                         <!-- Buttons -->
                         <div class="text-center no-print">
-                            <button type="button" id="downloadInvoiceButton" class="btn btn-success mt-3">Download Invoice</button>
-                            <button type="button" id="sendInvoiceEmailButton" class="btn btn-primary mt-3 ml-2">Send Email</button>
+                            <button type="button" id="downloadInvoiceButton" class="btn btn-success mt-3">Download
+                                Invoice</button>
+                            <button type="button" id="sendInvoiceEmailButton" class="btn btn-primary mt-3 ml-2">Send
+                                Email</button>
                         </div>
                     </div>
 
-                <?php else : ?>
+                <?php else: ?>
                     <p>Job details not found for BookingID: <?php echo htmlspecialchars($bookingID); ?></p>
                 <?php endif; ?>
             </main>
@@ -727,13 +741,13 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <!-- JavaScript code -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const editButton = document.getElementById('editEmployee');
             const employeeEditForm = document.getElementById('employee-edit-form');
             const employees = <?php echo json_encode($employees); ?>;
             let assignedEmployees = <?php echo json_encode(explode(', ', $jobDetails['EmployeeNames'])); ?>;
 
-            editButton.addEventListener('click', function() {
+            editButton.addEventListener('click', function () {
                 createForm();
             });
 
@@ -762,7 +776,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                     const removeButton = document.createElement('i');
                     removeButton.classList.add('fa', 'fa-ban');
                     removeButton.setAttribute('aria-hidden', 'true');
-                    removeButton.onclick = function() {
+                    removeButton.onclick = function () {
                         selectWrapper.remove();
                     };
 
@@ -780,7 +794,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 addButton.textContent = 'Add Employee';
                 addButton.type = 'button';
                 addButton.classList.add('add-button');
-                addButton.onclick = function() {
+                addButton.onclick = function () {
                     const selectWrapper = document.createElement('div');
                     selectWrapper.classList.add('select-wrapper');
 
@@ -795,7 +809,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 saveButton.textContent = 'Save Changes';
                 saveButton.type = 'button';
                 saveButton.classList.add('save-button');
-                saveButton.onclick = function() {
+                saveButton.onclick = function () {
                     saveChanges();
                 };
 
@@ -803,7 +817,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 cancelButton.textContent = 'Cancel';
                 cancelButton.type = 'button';
                 cancelButton.classList.add('cancel-button');
-                cancelButton.onclick = function() {
+                cancelButton.onclick = function () {
                     employeeEditForm.innerHTML = '';
                 };
 
@@ -825,9 +839,9 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 });
 
                 fetch('update-booking-employees.php', {
-                        method: 'POST',
-                        body: formData
-                    })
+                    method: 'POST',
+                    body: formData
+                })
                     .then(response => response.text())
                     .then(data => {
                         console.log('Response from server:', data);
@@ -1047,7 +1061,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
 
                 // Attach event listener for payment status stamp
                 const paymentStatus = document.getElementById('paymentStatus');
-                paymentStatus.addEventListener('click', function() {
+                paymentStatus.addEventListener('click', function () {
                     if (this.innerText === 'PAID') {
                         this.innerText = 'UNPAID';
                         this.classList.remove('PAID');
@@ -1073,7 +1087,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 const editableFields = document.querySelectorAll('#invoice-preview [contenteditable="true"]');
                 editableFields.forEach(field => {
                     field.addEventListener('input', recalculateTotals);
-                    field.addEventListener('keydown', function(e) {
+                    field.addEventListener('keydown', function (e) {
                         // Prevent entering invalid characters in number fields
                         const dataType = this.getAttribute('data-type');
                         if (dataType === 'number') {
@@ -1089,17 +1103,17 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 gstIncludedSelect.addEventListener('change', recalculateTotals);
 
                 // For checkboxes
-                document.getElementById('toggleStairCharge').addEventListener('change', function() {
+                document.getElementById('toggleStairCharge').addEventListener('change', function () {
                     toggleChargeVisibility();
                     recalculateTotals();
                 });
 
-                document.getElementById('togglePianoCharge').addEventListener('change', function() {
+                document.getElementById('togglePianoCharge').addEventListener('change', function () {
                     toggleChargeVisibility();
                     recalculateTotals();
                 });
 
-                document.getElementById('togglePoolTableCharge').addEventListener('change', function() {
+                document.getElementById('togglePoolTableCharge').addEventListener('change', function () {
                     toggleChargeVisibility();
                     recalculateTotals();
                 });
@@ -1108,7 +1122,7 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 document.getElementById('toggleCardSurcharge').addEventListener('change', recalculateTotals);
 
                 // For miscellaneous charge
-                document.getElementById('toggleMiscCharge').addEventListener('change', function() {
+                document.getElementById('toggleMiscCharge').addEventListener('change', function () {
                     toggleChargeVisibility();
                     recalculateTotals();
                 });
@@ -1175,9 +1189,9 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                     const poolTableCharge = getAdditionalCharge('poolTableCharge', 'togglePoolTableCharge');
 
                     // Perform calculations
-                    const subTotal = (totalLaborTime + calloutFee) * rate + pianoCharge + poolTableCharge;
+                    const subTotal = (totalLaborTime + calloutFee) * rate + pianoCharge + poolTableCharge + stairCharges;
                     const gstAmount = gstIncluded ? subTotal * 0.10 : 0;
-                    const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit + stairCharges;
+                    const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit;
 
                     // Calculate card surcharge if applicable
                     const totalCharge = calculateTotalWithCardSurcharge(totalChargeBeforeCardSurcharge, deposit);
@@ -1201,9 +1215,9 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                     const miscChargeAmount = document.getElementById('miscChargeRow').classList.contains('hidden') ? 0 : parseFloat(document.getElementById('miscChargeAmount').innerText) || 0;
 
                     // Perform calculations
-                    const subTotal = totalInitialCharge + pianoChargeAmount + poolTableChargeAmount + miscChargeAmount;
+                    const subTotal = totalInitialCharge + pianoChargeAmount + poolTableChargeAmount + miscChargeAmount + stairCharges;
                     const gstAmount = gstIncluded ? subTotal * 0.10 : 0;
-                    const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit + stairCharges;
+                    const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit;
 
                     // Calculate card surcharge if applicable
                     const totalCharge = calculateTotalWithCardSurcharge(totalChargeBeforeCardSurcharge, deposit);
@@ -1309,12 +1323,12 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
 
                     // Send data to the server to save the invoice record
                     fetch('saveInvoice.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            },
-                            body: `invoiceID=${nextInvoiceID}&invoiceName=${encodeURIComponent(invoiceName)}`
-                        })
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `invoiceID=${nextInvoiceID}&invoiceName=${encodeURIComponent(invoiceName)}`
+                    })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
@@ -1397,11 +1411,11 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 sendEmailButton.innerText = 'Sending...';
 
                 // Generate PDF from the cloned element and get the Blob
-                html2pdf().set(opt).from(clonedElement).outputPdf('blob').then(function(pdfBlob) {
+                html2pdf().set(opt).from(clonedElement).outputPdf('blob').then(function (pdfBlob) {
                     // Read the Blob as base64
                     var reader = new FileReader();
                     reader.readAsDataURL(pdfBlob);
-                    reader.onloadend = function() {
+                    reader.onloadend = function () {
                         var base64data = reader.result;
                         // Remove the data URL prefix to get just the base64 string
                         base64data = base64data.split(',')[1];
@@ -1416,9 +1430,9 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
 
                         // Send the data via AJAX POST to the server
                         fetch('jobDetails.php?BookingID=<?php echo $bookingID; ?>', {
-                                method: 'POST',
-                                body: formData
-                            })
+                            method: 'POST',
+                            body: formData
+                        })
                             .then(response => response.json())
                             .then(result => {
                                 sendEmailButton.disabled = false;
