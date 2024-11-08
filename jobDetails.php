@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['notifyEmployees'])) {
     }
     $stmt->close();
 
-    $apiKey = 'api-297BE2CF446D45E690BE025D4C5BA67D'; // Replace with your SMTP2GO API key
+    $apiKey = 'SMTP API KEY'; // Replace with your SMTP2GO API key
     $recipientEmails = explode(', ', $jobDetails['EmployeeEmails']);
     $senderEmail = 'aaron@acemovers.com.au';
     $senderName = 'Aaron Miller';
@@ -242,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     file_put_contents($pdfFilePath, $pdfContent);
 
     // Send the email using SMTP2GO Email API
-    $apiKey = 'api-297BE2CF446D45E690BE025D4C5BA67D'; // Replace with your SMTP2GO API key
+    $apiKey = 'SMTP API KEY'; // Replace with your SMTP2GO API key
     $recipientEmail = $clientEmail;
     $recipientName = $clientName;
     $senderEmail = 'aaron@acemovers.com.au'; // Replace with your sender email

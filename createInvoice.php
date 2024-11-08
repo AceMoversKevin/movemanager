@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Now, set up the SMTP2GO API call
 
-        $apiKey = 'api-297BE2CF446D45E690BE025D4C5BA67D'; // Replace with your SMTP2GO API key
+        $apiKey = 'SMTP API KEY'; // Replace with your SMTP2GO API key
         $recipientEmail = $clientEmail;
         $recipientName = $clientName;
         $senderEmail = 'aaron@acemovers.com.au'; // Replace with your sender email
