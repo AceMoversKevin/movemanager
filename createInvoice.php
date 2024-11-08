@@ -730,9 +730,10 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 const poolTableCharge = getAdditionalCharge('poolTableCharge', 'togglePoolTableCharge');
 
                 // Perform calculations
-                const subTotal = (totalLaborTime + calloutFee + pianoCharge + poolTableCharge + stairCharges) * rate;
+                const subTotal = (totalLaborTime + calloutFee + pianoCharge + poolTableCharge) * rate;
                 const gstAmount = gstIncluded ? subTotal * 0.10 : 0;
-                const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit;
+                const stairChargesGST = gstIncluded ? stairCharges * 1.10 : stairCharges;
+                const totalChargeBeforeCardSurcharge = subTotal + gstAmount + stairChargesGST - deposit;
 
                 // Calculate card surcharge if applicable
                 const totalCharge = calculateTotalWithCardSurcharge(totalChargeBeforeCardSurcharge, deposit);
@@ -757,9 +758,10 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                 const miscChargeAmount = toggleMiscCharge ? (parseFloat(document.getElementById('miscChargeAmount').innerText) || 0) : 0;
 
                 // Perform calculations
-                const subTotal = totalInitialCharge + pianoChargeAmount + poolTableChargeAmount + stairCharges + miscChargeAmount;
+                const subTotal = totalInitialCharge + pianoChargeAmount + poolTableChargeAmount + miscChargeAmount;
                 const gstAmount = gstIncluded ? subTotal * 0.10 : 0;
-                const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit;
+                const stairChargesGST = gstIncluded ? stairCharges * 1.10 : stairCharges;
+                const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit + stairChargesGST;
 
                 // Calculate card surcharge if applicable
                 const totalCharge = calculateTotalWithCardSurcharge(totalChargeBeforeCardSurcharge, deposit);

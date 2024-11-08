@@ -1189,9 +1189,10 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                     const poolTableCharge = getAdditionalCharge('poolTableCharge', 'togglePoolTableCharge');
 
                     // Perform calculations
-                    const subTotal = (totalLaborTime + calloutFee) * rate + pianoCharge + poolTableCharge + stairCharges;
+                    const subTotal = (totalLaborTime + calloutFee) * rate + pianoCharge + poolTableCharge;
                     const gstAmount = gstIncluded ? subTotal * 0.10 : 0;
-                    const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit;
+                    const stairChargesGST = gstIncluded ? stairCharges * 1.10 : stairCharges;
+                    const totalChargeBeforeCardSurcharge = subTotal + gstAmount + stairChargesGST - deposit;
 
                     // Calculate card surcharge if applicable
                     const totalCharge = calculateTotalWithCardSurcharge(totalChargeBeforeCardSurcharge, deposit);
@@ -1215,9 +1216,10 @@ echo "<script>const nextInvoiceID = $latestInvoiceID;</script>";
                     const miscChargeAmount = document.getElementById('miscChargeRow').classList.contains('hidden') ? 0 : parseFloat(document.getElementById('miscChargeAmount').innerText) || 0;
 
                     // Perform calculations
-                    const subTotal = totalInitialCharge + pianoChargeAmount + poolTableChargeAmount + miscChargeAmount + stairCharges;
+                    const subTotal = totalInitialCharge + pianoChargeAmount + poolTableChargeAmount + miscChargeAmount;
                     const gstAmount = gstIncluded ? subTotal * 0.10 : 0;
-                    const totalChargeBeforeCardSurcharge = subTotal + gstAmount - deposit;
+                    const stairChargesGST = gstIncluded ? stairCharges * 1.10 : stairCharges;
+                    const totalChargeBeforeCardSurcharge = subTotal + gstAmount + stairChargesGST - deposit;
 
                     // Calculate card surcharge if applicable
                     const totalCharge = calculateTotalWithCardSurcharge(totalChargeBeforeCardSurcharge, deposit);
